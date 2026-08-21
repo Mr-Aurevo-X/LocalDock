@@ -217,6 +217,24 @@ fn open_loopback(url: String) -> CommandResult<()> {
     open_url(&url)
 }
 
+/// Voluntary support / contact links (Discord, PayPal, Revolut, GitHub).
+/// Not a license fee — allowlisted HTTPS only, opened in the system browser.
+#[tauri::command]
+fn open_support(kind: String) -> CommandResult<()> {
+    let url = support_url(&kind)?;
+    open_url(url)
+}
+
+fn support_url(kind: &str) -> CommandResult<&'static str> {
+    match kind.trim().to_ascii_lowercase().as_str() {
+        "discord" => Ok("https://discord.com/users/406891052516114442"),
+        "paypal" => Ok("https://www.paypal.com/paypalme/aurevo1"),
+        "revolut" => Ok("https://revolut.me/mr_aurevo_x"),
+        "github" => Ok("https://github.com/Mr-Aurevo-X"),
+        _ => Err("unsupported support link".to_string()),
+    }
+}
+
 fn config_path() -> CommandResult<PathBuf> {
     #[cfg(windows)]
     {
@@ -445,7 +463,8 @@ fn main() {
             stop_app,
             list_ports,
             kill_port,
-            open_loopback
+            open_loopback,
+            open_support
         ])
         .run(tauri::generate_context!())
         .expect("run LocalDock Tauri application");

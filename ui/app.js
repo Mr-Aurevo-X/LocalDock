@@ -7,8 +7,12 @@ const state = {
 };
 
 const els = {
+  aboutDialog: document.querySelector("#aboutDialog"),
   apps: document.querySelector("#apps"),
+  legalBody: document.querySelector("#legalBody"),
   message: document.querySelector("#message"),
+  openAbout: document.querySelector("#openAbout"),
+  openAboutFoot: document.querySelector("#openAboutFoot"),
   ports: document.querySelector("#ports"),
   refreshApps: document.querySelector("#refreshApps"),
   refreshPorts: document.querySelector("#refreshPorts"),
@@ -17,6 +21,12 @@ const els = {
   rootPath: document.querySelector("#rootPath"),
   roots: document.querySelector("#roots"),
   scanResults: document.querySelector("#scanResults"),
+};
+
+const legalState = {
+  doc: "privacy",
+  lang: "fr",
+  cache: Object.create(null),
 };
 
 function requireInvoke() {
@@ -95,7 +105,7 @@ function renderRoots() {
   for (const root of roots) {
     const chip = tag("div", "chip");
     chip.append(tag("div", "meta", root));
-    const scanButton = tag("button", "", "Scan");
+    const scanButton = tag("button", "accent", "Scan");
     scanButton.type = "button";
     scanButton.addEventListener("click", () => scanRoot(root));
     chip.append(scanButton);
@@ -132,7 +142,7 @@ function renderApps() {
     card.append(tag("code", "", `${app.command} ${app.args.join(" ")}`.trim()));
 
     const actions = tag("div", "card-actions");
-    const start = tag("button", "", "Start");
+    const start = tag("button", "accent", "Start");
     start.type = "button";
     start.disabled = app.running;
     start.addEventListener("click", () => startApp(app.id));
@@ -210,7 +220,7 @@ function renderProposals() {
       card.append(tag("span", "badge warn", `Preferred port ${proposal.preferred_port}`));
     }
 
-    const register = tag("button", "", "Register");
+    const register = tag("button", "accent", "Register");
     register.type = "button";
     register.addEventListener("click", () => registerProposal(proposal));
     card.append(register);
@@ -270,10 +280,75 @@ async function killPort(port, pid) {
   setMessage(`Killed PID ${pid}.`);
 }
 
+async function openSupport(kind) {
+  await call("open_support", { kind });
+  setMessage(`Ouverture ${kind} (don / contact volontaire — pas un prix de licence).`);
+}
+
+async function loadLegal() {
+  const file = `legal/${legalState.doc}.${legalState.lang}.md`;
+  const key = file;
+  if (!legalState.cache[key]) {
+    const res = await fetch(file, { cache: "no-store" });
+    let text = res.ok ? await res.text() : `(${legalState.doc} unavailable)`;
+    text = text.replace(/\{\{PRODUCT\}\}/g, "LocalDock");
+    legalState.cache[key] = text;
+  }
+  els.legalBody.textContent = legalState.cache[key];
+}
+
+function openAbout() {
+  if (!els.aboutDialog) {
+    return;
+  }
+  loadLegal().catch((error) => {
+    els.legalBody.textContent = error?.message || String(error);
+  });
+  if (typeof els.aboutDialog.showModal === "function") {
+    els.aboutDialog.showModal();
+  } else {
+    els.aboutDialog.setAttribute("open", "");
+  }
+}
+
+function wireLegalUi() {
+  document.querySelectorAll("[data-support]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      const kind = btn.getAttribute("data-support");
+      if (kind) {
+        openSupport(kind).catch(() => {});
+      }
+    });
+  });
+
+  document.querySelectorAll(".legal-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      if (tab.dataset.lang) {
+        legalState.lang = tab.dataset.lang;
+        document.querySelectorAll(".legal-tab[data-lang]").forEach((node) => {
+          node.classList.toggle("active", node === tab);
+        });
+      }
+      if (tab.dataset.doc) {
+        legalState.doc = tab.dataset.doc;
+        document.querySelectorAll(".legal-tab[data-doc]").forEach((node) => {
+          node.classList.toggle("active", node === tab);
+        });
+      }
+      loadLegal().catch(() => {});
+    });
+  });
+
+  els.openAbout?.addEventListener("click", openAbout);
+  els.openAboutFoot?.addEventListener("click", openAbout);
+}
+
 async function init() {
   els.rootForm.addEventListener("submit", addRoot);
   els.refreshApps.addEventListener("click", loadApps);
   els.refreshPorts.addEventListener("click", loadPorts);
+  wireLegalUi();
 
   try {
     await Promise.all([loadApps(), loadPorts()]);

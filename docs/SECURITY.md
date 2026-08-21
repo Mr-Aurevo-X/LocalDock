@@ -14,7 +14,7 @@ See also: [design spec](superpowers/specs/2026-08-21-localdock-design.md).
 | Command injection via UI | Structured argv from registry; never `shell=true` with free text |
 | Path escape / launching outside tree | Paths canonicalized; must resolve under `allowed_roots`; reject `..` |
 | App binds `0.0.0.0` and exposes LAN | Inject `HOST`/`PORT` + framework flags; warn on non-loopback bind |
-| Accidental outbound from LocalDock | No HTTP client crates in **direct** deps; no updater; grep gate on URLs |
+| Accidental outbound from LocalDock | No HTTP client crates in **direct** deps; no updater; grep gate on URLs; `open_support` allowlist only |
 | Registry tampering | Config under user data dir with restrictive permissions |
 
 ### Trust boundary
@@ -39,6 +39,7 @@ Child dev server (prefer 127.0.0.1 bind)
 - **CSP:** `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'` in `tauri.conf.json`.
 - **No updater plugin**, no HTTP/MCP portal, no remote URL configuration.
 - **`open_loopback`:** accepts only `http://127.0.0.1:<port>` or `http://localhost:<port>` before delegating to the OS opener.
+- **`open_support`:** allowlisted Discord / PayPal / Revolut / GitHub only (voluntary; not telemetry).
 
 ## Dependency policy
 
@@ -78,8 +79,11 @@ rg -n "https?://" crates src-tauri/src ui --glob '!docs/**'
 
 Permitted matches:
 
-- Loopback open URL builders: `http://127.0.0.1:…` and `http://localhost:…` in `ui/app.js` and `src-tauri/src/main.rs` validation.
-- No other remote `http://` or `https://` literals in application source.
+- Loopback open URL builders: `http://127.0.0.1:…` and `http://localhost:…`
+- Allowlisted support / legal contact URLs only (Discord, PayPal, Revolut, GitHub org) used by `open_support` and `ui/legal/*.md`
+- No other remote `http://` or `https://` literals in application source
+
+`open_support` opens the system browser for voluntary donations/contact. A donation is **not** a license fee.
 
 `tauri.conf.json` schema URLs and `Cargo.lock` registry indices are out of scope for this gate.
 

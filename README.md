@@ -2,10 +2,15 @@
 
 Secure local-only launcher for loopback dev servers (Windows + Linux).
 
+**License:** PolyForm Noncommercial 1.0.0 (`LICENSE`) — © 2026 Mr-Aurevo-X.  
+**Legal / About:** in-app « À propos · Legal · Dons » (CGU, confidentialité, mentions, licences).  
+**Support (voluntary):** Discord · PayPal · Revolut — a donation is **not** a license fee.
+
 ## Network policy
 
-LocalDock itself opens **no** listen ports and makes **no** outbound connections.
+LocalDock itself opens **no** listen ports and makes **no** outbound connections for telemetry.
 Child processes you start may use the network for their own needs; by default they are steered to bind `127.0.0.1` only.
+Optional support buttons open allowlisted URLs in the system browser when you click them.
 
 ## Prerequisites
 
@@ -55,8 +60,8 @@ Before release or after dependency changes, run the network gate:
 The script verifies:
 
 1. No HTTP client crates in **direct** dependencies of `localdock-core` / `localdock`.
-2. No disallowed `http://` / `https://` literals in `crates/`, `src-tauri/src/`, or `ui/` (loopback URL builders allowed).
-3. Optional warnings if `semgrep` / `gitleaks` are not installed.
+2. No disallowed `http://` / `https://` literals in `crates/`, `src-tauri/src/`, or `ui/` (loopback builders + allowlisted support/legal URLs only).
+3. Optional warnings if `semgrep` / `gitleaks` are not installed; when installed they run and fail on findings.
 
 Transitive `reqwest` / `hyper` from Tauri’s WebView stack are documented exceptions; see SECURITY.md.
 

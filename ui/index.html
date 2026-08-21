@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-preset="void-glow">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,11 +7,11 @@
     <link rel="stylesheet" href="styles.css" />
     <script defer src="app.js"></script>
   </head>
-  <body>
+  <body class="theme-void-glow">
     <main class="shell">
       <header class="hero">
         <div>
-          <p class="eyebrow">Loopback-only dev dock</p>
+          <p class="eyebrow">Loopback-only · Void Glow</p>
           <h1>LocalDock</h1>
           <p class="lede">
             Register local projects, start them with loopback defaults, and inspect
@@ -21,6 +21,7 @@
         <div class="status-card">
           <span class="label">Registry</span>
           <code id="registryPath">Loading...</code>
+          <button id="openAbout" class="accent" type="button">À propos · Legal · Dons</button>
         </div>
       </header>
 
@@ -33,7 +34,7 @@
         </div>
         <form id="rootForm" class="row-form">
           <input id="rootPath" type="text" placeholder="C:\Projects or /home/me/projects" />
-          <button type="submit">Add Root</button>
+          <button class="accent" type="submit">Add Root</button>
         </form>
         <div id="roots" class="chips"></div>
         <div id="scanResults" class="cards"></div>
@@ -63,7 +64,55 @@
         </section>
       </section>
 
+      <footer class="site-foot">
+        <p>© 2026 Mr-Aurevo-X · LocalDock · PolyForm Noncommercial · fourni « en l’état »</p>
+        <p class="meta">
+          Pas de collecte éditeur · pas de MAJ auto · dons volontaires (pas un prix de licence)
+        </p>
+        <div class="support-row">
+          <button type="button" data-support="discord">Discord</button>
+          <button type="button" class="accent" data-support="paypal">PayPal</button>
+          <button type="button" class="accent" data-support="revolut">Revolut</button>
+          <button type="button" data-support="github">GitHub</button>
+          <button id="openAboutFoot" type="button">CGU / Confidentialité</button>
+        </div>
+      </footer>
+
       <p id="message" class="message" role="status"></p>
     </main>
+
+    <dialog id="aboutDialog" class="about-dialog">
+      <form method="dialog" class="about-shell">
+        <header class="about-head">
+          <div>
+            <p class="eyebrow">Mr-Aurevo-X</p>
+            <h2>À propos · LocalDock</h2>
+            <p class="meta">v0.1.0 · loopback launcher · Void Glow</p>
+          </div>
+          <button value="cancel" type="submit">Fermer</button>
+        </header>
+        <p class="about-disclaimer">
+          Logiciel fourni « en l’état ». Vous êtes responsable des processus lancés.
+          Aucune collecte de données par Mr-Aurevo-X. Un don n’achète ni licence ni support.
+        </p>
+        <div class="about-support">
+          <p class="meta">Si le boulot te plaît, un café — sinon profite.</p>
+          <div class="support-row">
+            <button type="button" data-support="discord">Discord</button>
+            <button type="button" class="accent" data-support="paypal">PayPal</button>
+            <button type="button" class="accent" data-support="revolut">Revolut</button>
+          </div>
+        </div>
+        <div class="legal-tabs" role="tablist">
+          <button type="button" class="legal-tab active" data-doc="privacy">Confidentialité</button>
+          <button type="button" class="legal-tab" data-doc="terms">CGU</button>
+          <button type="button" class="legal-tab" data-doc="mentions">Mentions</button>
+          <button type="button" class="legal-tab" data-doc="notices">Licences</button>
+          <button type="button" class="legal-tab" data-lang="en">EN</button>
+          <button type="button" class="legal-tab" data-lang="fr">FR</button>
+        </div>
+        <pre id="legalBody" class="legal-body" aria-live="polite"></pre>
+      </form>
+    </dialog>
   </body>
 </html>
