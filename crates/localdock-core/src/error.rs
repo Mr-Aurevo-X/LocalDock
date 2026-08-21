@@ -1,0 +1,19 @@
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum LocalDockError {
+    #[error("path escapes allowed roots: {0}")]
+    PathNotAllowed(String),
+    #[error("io: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("json: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("app not found: {0}")]
+    AppNotFound(String),
+    #[error("invalid command")]
+    InvalidCommand,
+    #[error("already running")]
+    AlreadyRunning,
+    #[error("not running")]
+    NotRunning,
+}

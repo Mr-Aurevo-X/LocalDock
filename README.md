@@ -14,4 +14,4 @@ Child processes you start may use the network for their own needs; by default th
 
 ## Status
 
-Planning complete — implementation not started yet.
+Workspace and `localdock-core` crate bootstrapped (v0.1.0).
