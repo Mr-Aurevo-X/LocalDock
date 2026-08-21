@@ -38,6 +38,7 @@ try {
   foreach ($item in @(
       "Lancer.cmd",
       "README.md",
+      "README.en.md",
       "LICENSE",
       "LICENSE.fr.md",
       "TERMS.md",

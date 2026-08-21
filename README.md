@@ -1,49 +1,65 @@
+[Français](README.md) · [English](README.en.md)
+
 # LocalDock
 
-**[Releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)** · **[Latest](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest)**
+Lanceur **local-only** pour tes serveurs de dev en loopback.  
+**Gratuit** · **100 % local-first** · **Mr-Aurevo-X** · mises à jour **non garanties**
 
-**© 2026 Mr-Aurevo-X — LocalDock — 100% local-first — free — updates not guaranteed**
+[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) · **[Releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)** · **v0.1.0**
 
-Lanceur local-only pour serveurs de dev en loopback (Windows ; Linux en sources).  
-Local-only launcher for loopback dev servers (Windows; Linux from source).
+## Aperçu
 
-**License:** PolyForm Noncommercial 1.0.0 (`LICENSE`) — © 2026 Mr-Aurevo-X.  
-**Legal / About:** in-app **À propos** (CGU, confidentialité, mentions, licences, chemins locaux).  
-**Support (voluntary):** Discord · PayPal · Revolut — a donation is **not** a license fee.
+- **Accueil** — nombre de ports ouverts, apps enregistrées à la main, racines de confiance + **Parcourir** / scan
+- **Ports ouverts** — nom du process, chemin, ligne de commande, ouvert depuis…
+- **Historique** — journal local sur **ce PC**
+- FR | EN dans l’app · chrome Void Glow (`min` / `max` / `close`)
 
-## Network policy
+## Pourquoi LocalDock
 
-LocalDock itself opens **no** listen ports and has **no** HTTP portal.  
-Child processes you start may use the network; by default they are steered to bind `127.0.0.1`.  
-Optional GitHub Latest check (toggle in About) is the only off-machine call when enabled — read-only, **no** in-app download/install.  
-Support buttons open allowlisted URLs in the system browser when you click them.
+- Gratuit (usage non commercial, `LICENSE`) — pas de compte, pas d’abonnement
+- Local-first — **pas de télémétrie éditeur**, **pas de portail HTTP**
+- LocalDock n’écoute **aucun** port ; tes apps enfants sont orientées vers `127.0.0.1`
+- Seule connexion hors machine : vérif. version GitHub **si tu la laisses activée** dans À propos (lecture seule, pas de téléchargement)
+- Le registre (`apps.json`) est **propre à ce PC et à ce compte Windows** — les chemins ne suivent pas une install ailleurs
 
-## Legal / Légal
+## Sur ton PC
 
-| FR | EN |
-|:--|:--|
-| **100 % gratuit** (usage non commercial, `LICENSE`) | **100% free** (non-commercial use, `LICENSE`) |
-| **Local-first** — pas de télémétrie éditeur | **Local-first** — no publisher telemetry |
-| **Mise à jour non garantie** — vérif. GitHub optionnelle, pas d’install auto | **Updates not guaranteed** — optional GitHub check, no auto-install |
-| **Copyright © 2026 Mr-Aurevo-X** | **Copyright © 2026 Mr-Aurevo-X** |
+| Quoi | Où |
+|------|-----|
+| **App** | Extrais `LocalDock.zip`, lance `Lancer.cmd` (ou `localdock.exe`) |
+| Registre | `%APPDATA%\LocalDock\apps.json` |
+| Historique | `%APPDATA%\LocalDock\history.json` |
+| Préférences | `%LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json` (partagé entre apps) |
 
-## What it does
+## Lancer
 
-- **Accueil** — count of open loopback ports, manually registered apps, trusted roots + **Parcourir** / scan
-- **Ports ouverts** — listeners with process name, path, command line, and how long they have been open
-- **Historique** — local log on this PC (`%APPDATA%\LocalDock\history.json`)
-- Registry is **per Windows user / this PC** (`%APPDATA%\LocalDock\apps.json`) — absolute paths do not migrate to another machine
+1. Télécharge le zip sur la page Releases  
+2. Extrais où tu veux  
+3. Lance `Lancer.cmd`
 
-## Prerequisites
+Windows peut afficher un avertissement : les binaires ne sont **pas signés**. C’est **SmartScreen**, pas un antivirus qui dit « virus ».
 
-- [Rust](https://www.rust-lang.org/tools/install) (stable, 2021 edition)
-- Platform WebView (WebView2 on Windows; WebKitGTK on Linux)
+## Version officielle uniquement
 
-Day-to-day: `Lancer.cmd` (uses `target\release\localdock.exe` if present).
+La seule version que je cautionne :
 
-## Build and run
+**https://github.com/Mr-Aurevo-X/LocalDock**
 
-From the repo root:
+Un fork ou une copie modifiée ailleurs **n’est pas** ma version — je n’en suis pas responsable.  
+Logiciel **tel quel**, sans garantie — détails dans `LICENSE` et `PRIVACY.md`.
+
+## Légal
+
+- **100 % gratuit** (usage non commercial, PolyForm Noncommercial 1.0.0)
+- **Local-first** — pas de télémétrie éditeur
+- **Mise à jour non garantie** — vérif. GitHub optionnelle, pas d’install auto
+- **Copyright © 2026 Mr-Aurevo-X**
+
+À propos dans l’app : CGU, confidentialité, mentions, licences, chemins locaux.
+
+## Compiler depuis les sources
+
+Rust stable + WebView2 (Windows) ou WebKitGTK (Linux). Linux : sources seulement sur v0.1.0, pas de zip officiel.
 
 ```powershell
 cargo test -p localdock-core
@@ -51,39 +67,21 @@ cargo build --release -p localdock
 .\Lancer.cmd
 ```
 
-Windows zip for GitHub Releases:
-
 ```powershell
 .\scripts\package-localdock-zip.ps1
-```
-
-Registry file:
-
-- Windows: `%APPDATA%\LocalDock\apps.json`
-- Linux: `$XDG_CONFIG_HOME/LocalDock/apps.json` or `~/.config/LocalDock/apps.json`
-
-Shared preferences (language, GitHub check): `%LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json`
-
-## Security checks
-
-Policy and threat model: [`docs/SECURITY.md`](docs/SECURITY.md).
-
-```powershell
 .\scripts\check-no-network-deps.ps1
 ```
 
-```bash
-./scripts/check-no-network-deps.sh
-```
+Docs : `docs/SECURITY.md` · `RELEASES.md` · `ISOLATION.md` · `docs/QA-SMOKE.md`
 
-## Docs
+## Soutien (optionnel)
 
-- Security: `docs/SECURITY.md`
-- Releases: `RELEASES.md`
-- Isolation: `ISOLATION.md`
-- Smoke: `docs/QA-SMOKE.md`
-- Design: `docs/superpowers/specs/2026-08-21-localdock-design.md`
+Si le boulot te plaît, un café — sinon profite.
 
-## Status
+[![Discord](https://img.shields.io/badge/Discord-Mr--Aurevo--X-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=050807)](https://discord.com/users/406891052516114442)
+[![PayPal](https://img.shields.io/badge/PayPal-Donate-39ff14?style=for-the-badge&logo=paypal&logoColor=00f0ff&labelColor=050807)](https://www.paypal.com/paypalme/aurevo1)
+[![Revolut](https://img.shields.io/badge/Revolut-mr__aurevo__x-00f0ff?style=for-the-badge&logo=revolut&logoColor=39ff14&labelColor=050807)](https://revolut.me/mr_aurevo_x)
 
-v0.1.0 — Windows portable zip + sources. UI Void Glow (chrome `min / max / close`), tabs Accueil / Ports / Historique, About / legal / optional GitHub Latest.
+---
+
+Rêvée par **Mr-Aurevo-X**. Cursor a réalisé le rêve.
