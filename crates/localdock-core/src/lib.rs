@@ -1,5 +1,6 @@
 pub mod error;
 pub mod path_guard;
+pub mod registry;
 
 pub use error::LocalDockError;
 
