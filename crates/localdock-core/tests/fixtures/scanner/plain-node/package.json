@@ -1,0 +1,6 @@
+{
+  "name": "fixture-plain-node",
+  "scripts": {
+    "start": "node index.js"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "fixture-vite-app",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  }
+}
