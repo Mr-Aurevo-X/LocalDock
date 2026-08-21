@@ -1,12 +1,11 @@
 use localdock_core::path_guard::assert_under_roots;
-use std::path::{Path, PathBuf};
 
 #[test]
 fn accepts_path_inside_root() {
     let root = std::env::temp_dir().join("ld-root-ok");
     let child = root.join("proj");
     std::fs::create_dir_all(&child).unwrap();
-    let got = assert_under_roots(&child, &[root.clone()]).unwrap();
+    let got = assert_under_roots(&child, std::slice::from_ref(&root)).unwrap();
     assert!(got.ends_with("proj"));
 }
 
