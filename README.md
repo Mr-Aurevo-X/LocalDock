@@ -5,7 +5,8 @@
 Lanceur **local-only** pour tes serveurs de dev en loopback.  
 **Gratuit** · **100 % local-first** · **Mr-Aurevo-X** · mises à jour **non garanties**
 
-[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) · **[Releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)** · **v0.1.0**
+[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
+[Toutes les releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
 
 ## Aperçu
 
@@ -56,23 +57,6 @@ Logiciel **tel quel**, sans garantie — détails dans `LICENSE` et `PRIVACY.md`
 - **Copyright © 2026 Mr-Aurevo-X**
 
 À propos dans l’app : CGU, confidentialité, mentions, licences, chemins locaux.
-
-## Compiler depuis les sources
-
-Rust stable + WebView2 (Windows) ou WebKitGTK (Linux). Linux : sources seulement sur v0.1.0, pas de zip officiel.
-
-```powershell
-cargo test -p localdock-core
-cargo build --release -p localdock
-.\Lancer.cmd
-```
-
-```powershell
-.\scripts\package-localdock-zip.ps1
-.\scripts\check-no-network-deps.ps1
-```
-
-Docs : `docs/SECURITY.md` · `RELEASES.md` · `ISOLATION.md` · `docs/QA-SMOKE.md`
 
 ## Soutien (optionnel)
 
