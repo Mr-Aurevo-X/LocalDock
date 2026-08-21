@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LocalDock</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Loopback-only dev dock</p>
+          <h1>LocalDock</h1>
+          <p class="lede">
+            Register local projects, start them with loopback defaults, and inspect
+            listening loopback ports without an HTTP portal.
+          </p>
+        </div>
+        <div class="status-card">
+          <span class="label">Registry</span>
+          <code id="registryPath">Loading...</code>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Roots + Scan</h2>
+            <p>Add trusted roots, then scan them for dev apps.</p>
+          </div>
+        </div>
+        <form id="rootForm" class="row-form">
+          <input id="rootPath" type="text" placeholder="C:\Projects or /home/me/projects" />
+          <button type="submit">Add Root</button>
+        </form>
+        <div id="roots" class="chips"></div>
+        <div id="scanResults" class="cards"></div>
+      </section>
+
+      <section class="grid">
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Apps</h2>
+              <p>Start and stop registered apps through local IPC.</p>
+            </div>
+            <button id="refreshApps" type="button">Refresh</button>
+          </div>
+          <div id="apps" class="cards"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Ports</h2>
+              <p>Loopback listeners only. Killing requires confirmation.</p>
+            </div>
+            <button id="refreshPorts" type="button">Refresh</button>
+          </div>
+          <div id="ports" class="cards"></div>
+        </section>
+      </section>
+
+      <p id="message" class="message" role="status"></p>
+    </main>
+  </body>
+</html>
