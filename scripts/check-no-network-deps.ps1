@@ -134,11 +134,31 @@ if ($urlFailures.Count -gt 0) {
     Write-Error ("Disallowed http(s):// literals:`n" + ($urlFailures -join [Environment]::NewLine))
 }
 
-Write-Host '== Optional: Semgrep / gitleaks =='
-foreach ($tool in @('semgrep', 'gitleaks')) {
-    if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
-        Write-Warning "$tool not installed; skipped (see docs/SECURITY.md release checklist)"
+Write-Host '== LocalDock: Semgrep security scan =='
+$semgrepPaths = @(
+    (Join-Path $Root 'crates'),
+    (Join-Path $Root 'src-tauri'),
+    (Join-Path $Root 'ui')
+)
+if (Get-Command semgrep -ErrorAction SilentlyContinue) {
+    & semgrep scan --config p/security-audit --error @semgrepPaths
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "semgrep reported findings (exit $LASTEXITCODE)"
     }
+    Write-Host 'semgrep: no findings'
+} else {
+    Write-Warning 'semgrep not installed; skipped (install for release — see docs/SECURITY.md)'
+}
+
+Write-Host '== LocalDock: gitleaks secret scan =='
+if (Get-Command gitleaks -ErrorAction SilentlyContinue) {
+    & gitleaks detect --source $Root --no-banner
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "gitleaks reported findings (exit $LASTEXITCODE)"
+    }
+    Write-Host 'gitleaks: no findings'
+} else {
+    Write-Warning 'gitleaks not installed; skipped (install for release — see docs/SECURITY.md)'
 }
 
 Write-Host 'OK: LocalDock network dependency and URL gates passed.'

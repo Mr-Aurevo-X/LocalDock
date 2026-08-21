@@ -35,7 +35,7 @@ Child dev server (prefer 127.0.0.1 bind)
 
 ## Tauri surface
 
-- **Capabilities:** `src-tauri/capabilities/default.json` grants `core:default` only (window + core IPC).
+- **Capabilities:** `src-tauri/capabilities/default.json` grants `core:default` only (window + core IPC). Verified minimal in Task 8 (`core:default` only; no extra permissions).
 - **CSP:** `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'` in `tauri.conf.json`.
 - **No updater plugin**, no HTTP/MCP portal, no remote URL configuration.
 - **`open_loopback`:** accepts only `http://127.0.0.1:<port>` or `http://localhost:<port>` before delegating to the OS opener.
@@ -90,7 +90,7 @@ Before tagging a release:
 1. Run `scripts/check-no-network-deps.ps1` (Windows) or `scripts/check-no-network-deps.sh` (Linux/macOS).
 2. `cargo test -p localdock-core`
 3. `cargo check -p localdock`
-4. Semgrep / gitleaks on the diff when those tools are installed (optional but recommended).
+4. Semgrep / gitleaks: the check scripts run them when installed and **fail on findings**; missing tools emit a warning only (OK for local dev).
 5. Manual smoke: idle LocalDock PID shows no unexpected listen sockets or outbound connections (Wireshark / TCPView / `ss -tlnp`).
 
 ## Reporting issues

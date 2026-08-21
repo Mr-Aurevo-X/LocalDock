@@ -27,8 +27,9 @@ collect_direct_deps() {
     }
     section ~ /^(dependencies|dev-dependencies|build-dependencies|target\.[^.]+\.dependencies)$/ {
       if ($0 ~ /^[[:space:]]*[A-Za-z0-9_-]+[[:space:]]*=/) {
-        match($0, /^[[:space:]]*([A-Za-z0-9_-]+)/, m)
-        print tolower(m[1])
+        sub(/^[[:space:]]*/, "")
+        sub(/[[:space:]]*=.*/, "")
+        print tolower($0)
       }
     }
   ' "$toml"
@@ -110,11 +111,20 @@ if ((${#url_failures[@]} > 0)); then
   exit 1
 fi
 
-echo "== Optional: Semgrep / gitleaks =="
-for tool in semgrep gitleaks; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "WARN: $tool not installed; skipped (see docs/SECURITY.md release checklist)" >&2
-  fi
-done
+echo "== LocalDock: Semgrep security scan =="
+if command -v semgrep >/dev/null 2>&1; then
+  semgrep scan --config p/security-audit --error crates src-tauri ui
+  echo "semgrep: no findings"
+else
+  echo "WARN: semgrep not installed; skipped (install for release — see docs/SECURITY.md)" >&2
+fi
+
+echo "== LocalDock: gitleaks secret scan =="
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks detect --source "$ROOT" --no-banner
+  echo "gitleaks: no findings"
+else
+  echo "WARN: gitleaks not installed; skipped (install for release — see docs/SECURITY.md)" >&2
+fi
 
 echo "OK: LocalDock network dependency and URL gates passed."
