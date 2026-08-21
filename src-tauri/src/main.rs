@@ -34,6 +34,7 @@ struct AppView {
     enabled: bool,
     running: bool,
     child_pid: Option<u32>,
+    owned_pids: Vec<u32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -305,13 +306,23 @@ fn snapshot(
             .iter()
             .map(|app| {
                 let child_pid = processes.pid(&app.id);
-                app_to_view(app, child_pid.is_some(), child_pid)
+                app_to_view(
+                    app,
+                    child_pid.is_some(),
+                    child_pid,
+                    processes.owned_pids(&app.id),
+                )
             })
             .collect(),
     }
 }
 
-fn app_to_view(app: &AppEntry, running: bool, child_pid: Option<u32>) -> AppView {
+fn app_to_view(
+    app: &AppEntry,
+    running: bool,
+    child_pid: Option<u32>,
+    owned_pids: Vec<u32>,
+) -> AppView {
     AppView {
         id: app.id.clone(),
         name: app.name.clone(),
@@ -323,6 +334,7 @@ fn app_to_view(app: &AppEntry, running: bool, child_pid: Option<u32>) -> AppView
         enabled: app.enabled,
         running,
         child_pid,
+        owned_pids,
     }
 }
 

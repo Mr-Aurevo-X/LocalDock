@@ -47,27 +47,57 @@ fn detect_framework(command: &str, args: &[String]) -> Option<Framework> {
     }
 }
 
-fn has_host_flag(args: &[String], long: &str, short: Option<&str>) -> bool {
-    args.iter().enumerate().any(|(idx, arg)| {
-        let matches_flag = arg == long || short.is_some_and(|s| arg == s);
-        let has_inline_value = arg.starts_with(&format!("{long}="))
-            || short.is_some_and(|s| arg.starts_with(&format!("{s}=")));
-        let has_separate_value =
-            matches_flag && args.get(idx + 1).is_some_and(|next| !next.starts_with('-'));
-
-        has_inline_value || has_separate_value
-    })
+fn rewrite_inline_host(arg: &str, long: &str, short: Option<&str>) -> Option<String> {
+    let long_prefix = format!("{long}=");
+    if arg.starts_with(&long_prefix) {
+        return Some(format!("{long}={LOOPBACK_HOST}"));
+    }
+    if let Some(short) = short {
+        let short_prefix = format!("{short}=");
+        if arg.starts_with(&short_prefix) {
+            return Some(format!("{short}={LOOPBACK_HOST}"));
+        }
+    }
+    None
 }
 
 fn extend_args(args: &[String], framework: Framework) -> Vec<String> {
     let (long, short) = framework.host_flag();
-    if has_host_flag(args, long, short) {
-        return args.to_vec();
+    let mut extended = Vec::with_capacity(args.len() + 2);
+    let mut replaced_value = false;
+    let mut idx = 0;
+
+    while idx < args.len() {
+        let arg = &args[idx];
+        if let Some(rewritten) = rewrite_inline_host(arg, long, short) {
+            extended.push(rewritten);
+            replaced_value = true;
+            idx += 1;
+            continue;
+        }
+
+        let matches_flag = arg == long || short.is_some_and(|flag| arg == flag);
+        if matches_flag {
+            extended.push(arg.clone());
+            if args.get(idx + 1).is_some_and(|next| !next.starts_with('-')) {
+                extended.push(LOOPBACK_HOST.to_string());
+                replaced_value = true;
+                idx += 2;
+                continue;
+            }
+            idx += 1;
+            continue;
+        }
+
+        extended.push(arg.clone());
+        idx += 1;
     }
 
-    let mut extended = args.to_vec();
-    extended.push(long.to_string());
-    extended.push(LOOPBACK_HOST.to_string());
+    if !replaced_value {
+        extended.push(long.to_string());
+        extended.push(LOOPBACK_HOST.to_string());
+    }
+
     extended
 }
 

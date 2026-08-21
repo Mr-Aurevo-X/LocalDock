@@ -187,11 +187,16 @@ function renderPorts() {
 }
 
 function lanExposuresForApp(app) {
-  if (!app.running || !app.child_pid) {
+  const owned = Array.isArray(app.owned_pids) && app.owned_pids.length > 0
+    ? app.owned_pids
+    : app.child_pid
+      ? [app.child_pid]
+      : [];
+  if (!app.running || owned.length === 0) {
     return [];
   }
 
-  return state.ports.filter((port) => port.pid === app.child_pid && !port.is_loopback);
+  return state.ports.filter((port) => owned.includes(port.pid) && !port.is_loopback);
 }
 
 function renderProposals() {

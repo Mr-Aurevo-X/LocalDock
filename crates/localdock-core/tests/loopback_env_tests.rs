@@ -50,6 +50,28 @@ fn does_not_duplicate_existing_host_flag() {
 }
 
 #[test]
+fn rewrites_explicit_lan_host_flag_to_loopback() {
+    let (_env, args) = apply_loopback("vite", &["--host".into(), "0.0.0.0".into()], Some(5173));
+    assert_eq!(args, vec!["--host", "127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_inline_lan_host_flag_to_loopback() {
+    let (_env, args) = apply_loopback("vite", &["--host=0.0.0.0".into()], Some(5173));
+    assert_eq!(args, vec!["--host=127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_next_h_lan_host_to_loopback() {
+    let (_env, args) = apply_loopback(
+        "next",
+        &["dev".into(), "-H".into(), "0.0.0.0".into()],
+        Some(3000),
+    );
+    assert_eq!(args, vec!["dev", "-H", "127.0.0.1"]);
+}
+
+#[test]
 fn bare_vite_host_flag_does_not_block_loopback_injection() {
     let (_env, args) = apply_loopback("vite", &["--host".into()], Some(5173));
     assert_eq!(args, vec!["--host", "--host", "127.0.0.1"]);

@@ -29,6 +29,40 @@ fn cleanup_dir(dir: &PathBuf) {
 }
 
 #[test]
+fn start_command_does_not_block_when_child_writes_lots_of_stdout() {
+    let cwd = temp_test_dir("ld-spawn-flood");
+    std::fs::write(cwd.join("flood.marker"), "").unwrap();
+    let probe_exe = cwd.join("flood-child.exe");
+    std::fs::copy(std::env::current_exe().unwrap(), &probe_exe).unwrap();
+
+    let mut child = start_command(
+        &probe_exe.display().to_string(),
+        &[
+            "--ignored".into(),
+            "--exact".into(),
+            "localdock_stdout_flood_child".into(),
+        ],
+        &cwd,
+        &[],
+    )
+    .unwrap();
+
+    let out_path = cwd.join("flood-done.txt");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while !out_path.exists() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    assert!(
+        out_path.exists(),
+        "child blocked writing to an undrained stdout pipe"
+    );
+
+    let _ = child.kill();
+    let _ = child.wait();
+    cleanup_dir(&cwd);
+}
+
+#[test]
 fn start_command_spawns_process_with_argv() {
     let cwd = temp_test_dir("ld-spawn-primitive");
     let (program, args) = sleeper_command();
@@ -74,6 +108,51 @@ fn process_manager_tracks_and_stops_app() {
     manager.stop(&app_id).unwrap();
     assert!(!manager.is_running(&app_id));
     assert!(manager.running_ids().is_empty());
+    cleanup_dir(&cwd);
+}
+
+#[cfg(unix)]
+#[test]
+fn process_manager_running_pids_include_descendants() {
+    let cwd = temp_test_dir("ld-spawn-tree");
+    let app_id = Uuid::new_v4().to_string();
+    let app = AppEntry {
+        id: app_id.clone(),
+        name: "tree".into(),
+        cwd: cwd.clone(),
+        command: "/usr/bin/env".into(),
+        args: vec!["sh".into(), "-c".into(), "sleep 30".into()],
+        preferred_port: None,
+        force_loopback: false,
+        enabled: true,
+    };
+    let manager = ProcessManager::default();
+
+    manager.start(&app).unwrap();
+    let root = manager.pid(&app_id).expect("running app should have a pid");
+
+    let deadline = Instant::now() + Duration::from_secs(3);
+    let mut pids = manager.running_pids();
+    while !pids.iter().any(|pid| *pid != root) && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(25));
+        pids = manager.running_pids();
+    }
+
+    assert!(pids.contains(&root));
+    assert!(
+        pids.iter().any(|pid| *pid != root),
+        "expected descendant pid in running_pids, got {pids:?}"
+    );
+    assert_eq!(manager.owned_pids(&app_id), pids);
+
+    manager.stop(&app_id).unwrap();
+    for pid in pids {
+        if pid != root {
+            let _ = std::process::Command::new("kill")
+                .args(["-TERM", &pid.to_string()])
+                .status();
+        }
+    }
     cleanup_dir(&cwd);
 }
 
@@ -175,6 +254,22 @@ fn start_applies_loopback_env_before_spawn() {
 
     manager.stop(&app_id).unwrap();
     cleanup_dir(&cwd);
+}
+
+#[test]
+#[ignore]
+fn localdock_stdout_flood_child() {
+    if !std::path::Path::new("flood.marker").exists() {
+        return;
+    }
+
+    let chunk = vec![b'x'; 64 * 1024];
+    for _ in 0..16 {
+        let _ = std::io::Write::write_all(&mut std::io::stdout(), &chunk);
+    }
+    let _ = std::io::Write::flush(&mut std::io::stdout());
+    std::fs::write("flood-done.txt", "ok").unwrap();
+    std::thread::sleep(Duration::from_secs(30));
 }
 
 #[test]
