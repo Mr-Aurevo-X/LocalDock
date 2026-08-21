@@ -95,6 +95,73 @@ fn add_app_rejects_invalid_command() {
 }
 
 #[test]
+fn add_app_rejects_shell_interpreters() {
+    let root = temp_test_dir();
+    let child = root.join("proj");
+    std::fs::create_dir_all(&child).unwrap();
+
+    let mut reg = Registry::default_empty();
+    reg.allowed_roots.push(root.clone());
+
+    for cmd in [
+        "cmd",
+        "cmd.exe",
+        "powershell",
+        "powershell.exe",
+        "pwsh",
+        "sh",
+        "bash",
+        "zsh",
+        "fish",
+        "C:\\Windows\\System32\\cmd.exe",
+        "/usr/bin/bash",
+        "PoWeRsHeLl.ExE",
+    ] {
+        let entry = AppEntry {
+            id: Uuid::new_v4().to_string(),
+            name: "shell".into(),
+            cwd: child.clone(),
+            command: cmd.into(),
+            args: vec![],
+            preferred_port: None,
+            force_loopback: true,
+            enabled: true,
+        };
+        let err = reg.add_app(entry).unwrap_err();
+        assert!(matches!(err, LocalDockError::InvalidCommand), "cmd={cmd:?}");
+    }
+
+    cleanup_dir(&root);
+}
+
+#[test]
+fn app_entry_defaults_force_loopback_true() {
+    let default_entry = AppEntry::default();
+    assert!(default_entry.force_loopback);
+
+    let constructed = AppEntry::new(
+        Uuid::new_v4().to_string(),
+        "constructed",
+        PathBuf::from("."),
+        "npm",
+        vec!["run".into(), "dev".into()],
+    );
+    assert!(constructed.force_loopback);
+
+    let json = r#"{
+        "id": "app",
+        "name": "App",
+        "cwd": ".",
+        "command": "npm",
+        "args": [],
+        "preferred_port": null,
+        "enabled": true
+    }"#;
+    let from_json: AppEntry = serde_json::from_str(json).unwrap();
+    assert!(from_json.force_loopback);
+}
+
+#[test]
 fn remove_app_and_get() {
     let root = temp_test_dir();
     let child = root.join("proj");

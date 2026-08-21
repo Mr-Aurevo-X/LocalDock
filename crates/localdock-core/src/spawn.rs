@@ -1,5 +1,5 @@
 use crate::loopback_env;
-use crate::registry::AppEntry;
+use crate::registry::{validate_command, AppEntry};
 use crate::LocalDockError;
 use std::collections::HashMap;
 use std::path::Path;
@@ -23,6 +23,8 @@ impl ProcessManager {
     }
 
     pub fn start(&self, app: &AppEntry) -> Result<(), LocalDockError> {
+        validate_command(&app.command)?;
+
         let (env_pairs, final_args) = if app.force_loopback {
             loopback_env::apply_loopback(&app.command, &app.args, app.preferred_port)
         } else {

@@ -99,15 +99,54 @@ fn process_manager_rejects_duplicate_running_app() {
 }
 
 #[test]
+fn process_manager_rejects_shell_interpreters_before_spawn() {
+    let cwd = temp_test_dir("ld-spawn-shell-reject");
+    let manager = ProcessManager::default();
+
+    for cmd in [
+        "cmd",
+        "cmd.exe",
+        "powershell",
+        "powershell.exe",
+        "pwsh",
+        "sh",
+        "bash",
+        "zsh",
+        "fish",
+        "C:\\Windows\\System32\\cmd.exe",
+        "/usr/bin/bash",
+        "PwSh",
+    ] {
+        let app = AppEntry {
+            id: Uuid::new_v4().to_string(),
+            name: "shell".into(),
+            cwd: cwd.clone(),
+            command: cmd.into(),
+            args: vec![],
+            preferred_port: None,
+            force_loopback: false,
+            enabled: true,
+        };
+        let err = manager.start(&app).unwrap_err();
+        assert!(matches!(err, LocalDockError::InvalidCommand), "cmd={cmd:?}");
+        assert!(!manager.is_running(&app.id));
+    }
+
+    cleanup_dir(&cwd);
+}
+
+#[test]
 fn start_applies_loopback_env_before_spawn() {
     let cwd = temp_test_dir("ld-spawn-loopback");
     std::fs::write(cwd.join("env-probe.marker"), "").unwrap();
+    let probe_exe = cwd.join("env-probe-child.exe");
+    std::fs::copy(std::env::current_exe().unwrap(), &probe_exe).unwrap();
     let app_id = Uuid::new_v4().to_string();
     let app = AppEntry {
         id: app_id.clone(),
         name: "probe".into(),
         cwd: cwd.clone(),
-        command: std::env::current_exe().unwrap().display().to_string(),
+        command: probe_exe.display().to_string(),
         args: vec![
             "--ignored".into(),
             "--exact".into(),
