@@ -1,0 +1,6 @@
+{
+  "name": "fixture-env-port",
+  "scripts": {
+    "dev": "next dev"
+  }
+}
