@@ -141,9 +141,16 @@ code {
 }
 
 .shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 2rem 0;
+  padding: 1.2rem 0 2rem;
+}
+
+body.frameless:not(.pcd-embed) .shell {
+  overflow: auto !important;
 }
 
 .hero,
@@ -210,7 +217,8 @@ h2 {
   box-shadow: var(--glow-cyan), 0 1.2rem 3rem rgba(0, 0, 0, 0.35);
 }
 
-.site-foot {
+.site-foot,
+.chrome-foot {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--panel) 88%, transparent);
@@ -229,79 +237,202 @@ h2 {
   margin-top: 0.75rem;
 }
 
-.about-dialog {
+.chrome-foot {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.chrome-foot .copyright,
+.privacy-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.hub-lang-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  max-width: 180px;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.hub-lang-seg {
+  appearance: none;
+  margin: 0;
+  padding: 0.38rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.hub-lang-seg.is-active {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--glow-red);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.tab-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin: 0 0 1rem;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel2) 70%, transparent);
+}
+
+.tab-seg {
+  appearance: none;
+  margin: 0;
+  padding: 0.45rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab-seg.is-active {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  box-shadow: var(--glow-red);
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.home-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.kpi-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel2);
+}
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.registry-hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.hub-support-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.hub-support-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+}
+
+.hub-support-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.hub-support-btn:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: var(--glow-red);
+}
+
+.update-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent-soft) 70%, var(--panel));
+  box-shadow: var(--glow-red);
+}
+
+.update-banner[hidden] {
+  display: none;
+}
+
+.update-banner-text {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.update-banner-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.confirm-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+  width: min(420px, 94vw);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.confirm-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);
   color: var(--text);
-  max-width: min(820px, calc(100vw - 2rem));
-  padding: 0;
-  width: 100%;
-}
-
-.about-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
-}
-
-.about-shell {
-  display: grid;
-  gap: 0.85rem;
-  padding: 1rem;
-}
-
-.about-head {
-  align-items: start;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-
-.about-disclaimer {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--text);
-  margin: 0;
-  padding: 0.75rem 0.85rem;
-}
-
-.about-support {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--panel2);
-  padding: 0.75rem 0.85rem;
-}
-
-.legal-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.legal-tab {
-  font-size: 0.85rem;
-  padding: 0.45rem 0.7rem;
-}
-
-.legal-tab.active {
-  border-color: var(--accent);
   box-shadow: var(--glow-red);
 }
 
-.legal-body {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--bg) 80%, #000);
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  line-height: 1.45;
+.confirm-card h3,
+.confirm-card p {
   margin: 0;
-  max-height: min(42vh, 420px);
-  overflow: auto;
-  padding: 0.85rem;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 .panel {
@@ -323,6 +454,7 @@ h2 {
 
 .row-form {
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .row-form input {
@@ -416,6 +548,16 @@ h2 {
   box-shadow: var(--glow-cyan);
   color: var(--text);
   padding: 0.7rem 1rem;
+}
+
+.message.error:not(:empty) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: var(--glow-red);
+}
+
+.message.ok:not(:empty) {
+  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
+  box-shadow: var(--glow-green);
 }
 
 @media (max-width: 860px) {

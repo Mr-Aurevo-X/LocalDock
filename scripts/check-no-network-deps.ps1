@@ -94,6 +94,7 @@ $AllowPatterns = @(
     'http://127\.0\.0\.1',
     'http://localhost',
     'https://github\.com/Mr-Aurevo-X',
+    'https://api\.github\.com/repos/Mr-Aurevo-X/LocalDock',
     'https://discord\.com/users/406891052516114442',
     'https://www\.paypal\.com/paypalme/aurevo1',
     'https://revolut\.me/mr_aurevo_x'

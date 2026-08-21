@@ -19,3 +19,14 @@ fn rejects_path_outside_root() {
     let msg = err.to_string();
     assert!(msg.contains("escapes") || msg.contains("not allowed"));
 }
+
+#[cfg(windows)]
+#[test]
+fn display_path_strips_verbatim_prefix() {
+    use std::path::PathBuf;
+    let path = PathBuf::from(r"\\?\C:\Users\aurel\Documents\Dev Game Be Like Vercel");
+    assert_eq!(
+        localdock_core::path_guard::display_path(&path),
+        r"C:\Users\aurel\Documents\Dev Game Be Like Vercel"
+    );
+}

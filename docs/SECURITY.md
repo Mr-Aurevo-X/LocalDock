@@ -1,6 +1,6 @@
 # LocalDock — Security Policy
 
-LocalDock is a **local-only** launcher for loopback dev servers. The controller process must not expose a network control plane and must not make outbound connections during normal operation.
+LocalDock is a **local-only** launcher for loopback dev servers. The controller process must not expose a network control plane. The only optional outbound call is a **read-only GitHub Latest** check when the user leaves that toggle on.
 
 See also: [design spec](superpowers/specs/2026-08-21-localdock-design.md).
 
@@ -14,7 +14,7 @@ See also: [design spec](superpowers/specs/2026-08-21-localdock-design.md).
 | Command injection via UI | Structured argv from registry; never `shell=true` with free text |
 | Path escape / launching outside tree | Paths canonicalized; must resolve under `allowed_roots`; reject `..` |
 | App binds `0.0.0.0` and exposes LAN | Inject `HOST`/`PORT` + framework flags; warn on non-loopback bind |
-| Accidental outbound from LocalDock | No HTTP client crates in **direct** deps; no updater; grep gate on URLs; `open_support` allowlist only |
+| Accidental outbound from LocalDock | No HTTP client crates in **direct** deps; no updater/install; optional GitHub Latest via OS `curl` if the About toggle is on; grep gate on URLs; `open_support` / `open_release` allowlists |
 | Registry tampering | Config under user data dir with restrictive permissions |
 
 ### Trust boundary
@@ -35,11 +35,12 @@ Child dev server (prefer 127.0.0.1 bind)
 
 ## Tauri surface
 
-- **Capabilities:** `src-tauri/capabilities/default.json` grants `core:default` only (window + core IPC). Verified minimal in Task 8 (`core:default` only; no extra permissions).
+- **Capabilities:** `src-tauri/capabilities/default.json` grants `core:default` plus frameless window chrome (minimize / toggle-maximize / close / start-dragging).
 - **CSP:** `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'` in `tauri.conf.json`.
 - **No updater plugin**, no HTTP/MCP portal, no remote URL configuration.
 - **`open_loopback`:** accepts only `http://127.0.0.1:<port>` or `http://localhost:<port>` before delegating to the OS opener.
-- **`open_support`:** allowlisted Discord / PayPal / Revolut / GitHub only (voluntary; not telemetry).
+- **`open_support`:** allowlisted Discord / PayPal / Revolut / GitHub org only (voluntary; not telemetry).
+- **`check_github_latest` / `open_release`:** optional read-only GitHub Latest for `Mr-Aurevo-X/LocalDock`. No download, no install. Honors `checkGithubUpdates` in shared Mr-Aurevo-X settings.
 
 ## Dependency policy
 
@@ -54,7 +55,7 @@ These **must not** list HTTP/network client crates in `[dependencies]`, `[dev-de
 
 Blocked crate names (direct): `reqwest`, `hyper`, `ureq`, `curl`, `surf`, `isahc`, `awc`, `attohttpc`, `minreq`, `oauth2`, `hubcaps`, `octocrab`.
 
-Allowed direct deps today: serialization (`serde`, `serde_json`), errors (`thiserror`), IDs (`uuid`), platform APIs (`windows-sys` on Windows), and Tauri shell crates (`tauri`, `tauri-build`).
+Allowed direct deps today: serialization (`serde`, `serde_json`), errors (`thiserror`), IDs (`uuid`), native folder picker (`rfd`, no HTTP client), platform APIs (`windows-sys` on Windows), and Tauri shell crates (`tauri`, `tauri-build`).
 
 ### Transitive exceptions (Tauri / WebView)
 
@@ -80,7 +81,8 @@ rg -n "https?://" crates src-tauri/src ui --glob '!docs/**'
 Permitted matches:
 
 - Loopback open URL builders: `http://127.0.0.1:…` and `http://localhost:…`
-- Allowlisted support / legal contact URLs only (Discord, PayPal, Revolut, GitHub org) used by `open_support` and `ui/legal/*.md`
+- Allowlisted support / legal contact URLs only (Discord, PayPal, Revolut, GitHub org / LocalDock repo) used by `open_support`, `open_release`, and `ui/legal/*.md`
+- Optional GitHub Latest API: `https://api.github.com/repos/Mr-Aurevo-X/LocalDock/releases/latest`
 - No other remote `http://` or `https://` literals in application source
 
 `open_support` opens the system browser for voluntary donations/contact. A donation is **not** a license fee.

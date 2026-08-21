@@ -1,8 +1,9 @@
 use crate::loopback_env;
+use crate::process_tree;
 use crate::registry::{validate_command, AppEntry};
 use crate::LocalDockError;
-use std::collections::HashMap;
-use std::path::Path;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 
@@ -123,6 +124,33 @@ impl ProcessManager {
         pids.sort_unstable();
         pids
     }
+
+    pub fn tree_pids(&self, app_id: &str) -> Vec<u32> {
+        match self.pid(app_id) {
+            Some(root) => sorted_tree(root),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn running_tree_pids(&self) -> Vec<u32> {
+        let roots = self.running_pids();
+        let ppid_of = process_tree::process_parent_map();
+        let mut all = HashSet::new();
+        for root in roots {
+            all.extend(process_tree::collect_tree(root, &ppid_of));
+        }
+        let mut pids = all.into_iter().collect::<Vec<_>>();
+        pids.sort_unstable();
+        pids
+    }
+}
+
+fn sorted_tree(root: u32) -> Vec<u32> {
+    let mut pids = process_tree::collect_tree(root, &process_tree::process_parent_map())
+        .into_iter()
+        .collect::<Vec<_>>();
+    pids.sort_unstable();
+    pids
 }
 
 pub fn start_command(
@@ -131,16 +159,70 @@ pub fn start_command(
     cwd: &Path,
     env: &[(String, String)],
 ) -> Result<Child, LocalDockError> {
-    let mut cmd = Command::new(program);
+    let resolved = resolve_program(program);
+    let mut cmd = Command::new(&resolved);
     cmd.args(args)
         .current_dir(cwd)
         .envs(env.iter().map(|(key, value)| (key, value)))
         .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
 
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);
 
     cmd.spawn().map_err(LocalDockError::from)
+}
+
+pub fn resolve_program(program: &str) -> PathBuf {
+    let given = PathBuf::from(program);
+    if given.components().count() > 1 && given.is_file() {
+        return given;
+    }
+
+    #[cfg(windows)]
+    {
+        resolve_windows_program(program)
+    }
+
+    #[cfg(not(windows))]
+    {
+        given
+    }
+}
+
+#[cfg(windows)]
+fn resolve_windows_program(program: &str) -> PathBuf {
+    let names = if program.contains('.') {
+        vec![program.to_string()]
+    } else {
+        vec![
+            format!("{program}.exe"),
+            format!("{program}.cmd"),
+            format!("{program}.bat"),
+            program.to_string(),
+        ]
+    };
+
+    let mut dirs: Vec<PathBuf> = std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
+        .collect();
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        dirs.push(PathBuf::from(appdata).join("npm"));
+    }
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        let local = PathBuf::from(local);
+        dirs.push(local.join("pnpm"));
+        dirs.push(local.join("Programs").join("pnpm"));
+    }
+
+    for dir in dirs {
+        for name in &names {
+            let candidate = dir.join(name);
+            if candidate.is_file() {
+                return candidate;
+            }
+        }
+    }
+
+    PathBuf::from(program)
 }

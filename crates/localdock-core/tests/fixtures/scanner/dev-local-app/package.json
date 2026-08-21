@@ -1,0 +1,10 @@
+{
+  "name": "fixture-lounge",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "echo build",
+    "dev:local": "node scripts/dev-local.mjs",
+    "dev:incremental": "echo skip"
+  }
+}

@@ -10,6 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
+        "decorations": false,
         "title": "LocalDock",
         "width": 1120,
         "height": 760,

@@ -2,7 +2,7 @@ use crate::LocalDockError;
 use std::path::{Path, PathBuf};
 
 /// Strip Windows verbatim `\\?\` / `\\?\UNC\` prefixes so path prefix checks behave consistently.
-fn strip_verbatim_prefix(path: &Path) -> PathBuf {
+pub fn strip_verbatim_prefix(path: &Path) -> PathBuf {
     #[cfg(windows)]
     {
         let s = path.to_string_lossy();
@@ -14,6 +14,10 @@ fn strip_verbatim_prefix(path: &Path) -> PathBuf {
         }
     }
     path.to_path_buf()
+}
+
+pub fn display_path(path: &Path) -> String {
+    strip_verbatim_prefix(path).display().to_string()
 }
 
 pub fn assert_under_roots(path: &Path, roots: &[PathBuf]) -> Result<PathBuf, LocalDockError> {

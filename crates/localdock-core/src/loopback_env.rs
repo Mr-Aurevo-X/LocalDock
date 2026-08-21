@@ -1,3 +1,5 @@
+use std::net::IpAddr;
+
 const LOOPBACK_HOST: &str = "127.0.0.1";
 
 enum Framework {
@@ -47,28 +49,91 @@ fn detect_framework(command: &str, args: &[String]) -> Option<Framework> {
     }
 }
 
-fn has_host_flag(args: &[String], long: &str, short: Option<&str>) -> bool {
-    args.iter().enumerate().any(|(idx, arg)| {
-        let matches_flag = arg == long || short.is_some_and(|s| arg == s);
-        let has_inline_value = arg.starts_with(&format!("{long}="))
-            || short.is_some_and(|s| arg.starts_with(&format!("{s}=")));
-        let has_separate_value =
-            matches_flag && args.get(idx + 1).is_some_and(|next| !next.starts_with('-'));
+fn is_loopback_host(value: &str) -> bool {
+    let trimmed = value.trim().trim_matches(|c| c == '[' || c == ']');
+    if trimmed.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    trimmed
+        .parse::<IpAddr>()
+        .map(|ip| ip.is_loopback())
+        .unwrap_or(false)
+}
 
-        has_inline_value || has_separate_value
-    })
+fn is_host_flag(arg: &str, long: &str, short: Option<&str>) -> bool {
+    arg == long || short.is_some_and(|s| arg == s)
+}
+
+fn rewrite_inline_host(arg: &str, long: &str, short: Option<&str>) -> Option<String> {
+    let long_prefix = format!("{long}=");
+    if let Some(value) = arg.strip_prefix(&long_prefix) {
+        return Some(if is_loopback_host(value) {
+            arg.to_string()
+        } else {
+            format!("{long}={LOOPBACK_HOST}")
+        });
+    }
+    if let Some(short) = short {
+        let short_prefix = format!("{short}=");
+        if let Some(value) = arg.strip_prefix(&short_prefix) {
+            return Some(if is_loopback_host(value) {
+                arg.to_string()
+            } else {
+                format!("{short}={LOOPBACK_HOST}")
+            });
+        }
+    }
+    None
 }
 
 fn extend_args(args: &[String], framework: Framework) -> Vec<String> {
     let (long, short) = framework.host_flag();
-    if has_host_flag(args, long, short) {
-        return args.to_vec();
+    rewrite_or_inject_host(args, long, short)
+}
+
+fn rewrite_or_inject_host(args: &[String], long: &str, short: Option<&str>) -> Vec<String> {
+    let mut out = Vec::with_capacity(args.len() + 2);
+    let mut found_valued = false;
+    let mut idx = 0;
+
+    while idx < args.len() {
+        let arg = &args[idx];
+        if let Some(rewritten) = rewrite_inline_host(arg, long, short) {
+            out.push(rewritten);
+            found_valued = true;
+            idx += 1;
+            continue;
+        }
+
+        if is_host_flag(arg, long, short) {
+            out.push(arg.clone());
+            if let Some(next) = args.get(idx + 1) {
+                if !next.starts_with('-') {
+                    if is_loopback_host(next) {
+                        out.push(next.clone());
+                    } else {
+                        out.push(LOOPBACK_HOST.to_string());
+                    }
+                    found_valued = true;
+                    idx += 2;
+                    continue;
+                }
+            }
+            out.push(LOOPBACK_HOST.to_string());
+            found_valued = true;
+            idx += 1;
+            continue;
+        }
+
+        out.push(arg.clone());
+        idx += 1;
     }
 
-    let mut extended = args.to_vec();
-    extended.push(long.to_string());
-    extended.push(LOOPBACK_HOST.to_string());
-    extended
+    if !found_valued {
+        out.push(long.to_string());
+        out.push(LOOPBACK_HOST.to_string());
+    }
+    out
 }
 
 pub fn apply_loopback(

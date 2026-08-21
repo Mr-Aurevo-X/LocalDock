@@ -52,13 +52,47 @@ fn does_not_duplicate_existing_host_flag() {
 #[test]
 fn bare_vite_host_flag_does_not_block_loopback_injection() {
     let (_env, args) = apply_loopback("vite", &["--host".into()], Some(5173));
-    assert_eq!(args, vec!["--host", "--host", "127.0.0.1"]);
+    assert_eq!(args, vec!["--host", "127.0.0.1"]);
 }
 
 #[test]
 fn bare_next_h_flag_does_not_block_loopback_injection() {
     let (_env, args) = apply_loopback("next", &["dev".into(), "-H".into()], Some(3000));
-    assert_eq!(args, vec!["dev", "-H", "-H", "127.0.0.1"]);
+    assert_eq!(args, vec!["dev", "-H", "127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_inline_lan_host_flag_to_loopback() {
+    let (_env, args) = apply_loopback("vite", &["--host=0.0.0.0".into()], Some(5173));
+    assert_eq!(args, vec!["--host=127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_separate_lan_host_value_to_loopback() {
+    let (_env, args) = apply_loopback("vite", &["--host".into(), "0.0.0.0".into()], Some(5173));
+    assert_eq!(args, vec!["--host", "127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_next_lan_h_flag_to_loopback() {
+    let (_env, args) = apply_loopback(
+        "next",
+        &["dev".into(), "-H".into(), "0.0.0.0".into()],
+        Some(3000),
+    );
+    assert_eq!(args, vec!["dev", "-H", "127.0.0.1"]);
+}
+
+#[test]
+fn rewrites_next_inline_lan_h_flag_to_loopback() {
+    let (_env, args) = apply_loopback("next", &["dev".into(), "-H=0.0.0.0".into()], Some(3000));
+    assert_eq!(args, vec!["dev", "-H=127.0.0.1"]);
+}
+
+#[test]
+fn keeps_existing_loopback_host_without_a_second_flag() {
+    let (_env, args) = apply_loopback("vite", &["--host=127.0.0.1".into()], Some(5173));
+    assert_eq!(args, vec!["--host=127.0.0.1"]);
 }
 
 #[test]

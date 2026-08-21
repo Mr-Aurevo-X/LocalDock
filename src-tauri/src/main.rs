@@ -1,8 +1,13 @@
-use localdock_core::path_guard::assert_under_roots;
-use localdock_core::ports::{self, PortRow};
+mod github_latest;
+mod history;
+mod suite_settings;
+
+use localdock_core::path_guard::{assert_under_roots, display_path};
+use localdock_core::ports::{self, AppHint, PortRow};
 use localdock_core::registry::{AppEntry, Registry};
 use localdock_core::scanner::{scan_root, ProposedApp};
 use localdock_core::spawn::ProcessManager;
+use localdock_core::LocalDockError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -13,6 +18,12 @@ use uuid::Uuid;
 
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 type CommandResult<T> = Result<T, String>;
 
@@ -34,6 +45,7 @@ struct AppView {
     enabled: bool,
     running: bool,
     child_pid: Option<u32>,
+    tree_pids: Vec<u32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -86,6 +98,7 @@ fn add_root(path: String, state: State<'_, AppState>) -> CommandResult<RegistryS
         .registry
         .lock()
         .map_err(|_| "registry mutex poisoned".to_string())?;
+    let display = display_path(&root);
     if !registry
         .allowed_roots
         .iter()
@@ -94,6 +107,7 @@ fn add_root(path: String, state: State<'_, AppState>) -> CommandResult<RegistryS
         registry.allowed_roots.push(root);
     }
     persist_registry(&mut registry, &state.registry_path)?;
+    let _ = history::append(&state.registry_path, "add_root", &display);
 
     let processes = state
         .processes
@@ -110,9 +124,16 @@ fn scan(root: String, state: State<'_, AppState>) -> CommandResult<Vec<ProposedA
         .map_err(|_| "registry mutex poisoned".to_string())?;
     let root = assert_under_roots(Path::new(&root), &registry.allowed_roots)
         .map_err(|err| err.to_string())?;
-    scan_root(&root, 4)
-        .map(|apps| apps.into_iter().map(proposal_to_view).collect())
-        .map_err(|err| err.to_string())
+    let shown = display_path(&root);
+    let proposals = scan_root(&root, 4)
+        .map(|apps| apps.into_iter().map(proposal_to_view).collect::<Vec<_>>())
+        .map_err(|err| err.to_string())?;
+    let _ = history::append(
+        &state.registry_path,
+        "scan",
+        &format!("{} ({})", shown, proposals.len()),
+    );
+    Ok(proposals)
 }
 
 #[tauri::command]
@@ -135,8 +156,10 @@ fn register_app(
     entry.preferred_port = input.preferred_port;
     entry.force_loopback = input.force_loopback.unwrap_or(true);
     entry.enabled = true;
+    let name = entry.name.clone();
     registry.add_app(entry).map_err(|err| err.to_string())?;
     persist_registry(&mut registry, &state.registry_path)?;
+    let _ = history::append(&state.registry_path, "register", &name);
 
     let processes = state
         .processes
@@ -165,39 +188,81 @@ fn start_app(id: String, state: State<'_, AppState>) -> CommandResult<()> {
         .processes
         .lock()
         .map_err(|_| "process manager mutex poisoned".to_string())?;
-    processes.start(&app).map_err(|err| err.to_string())
+    processes.start(&app).map_err(|err| err.to_string())?;
+    let _ = history::append(&state.registry_path, "start", &app.name);
+    Ok(())
 }
 
 #[tauri::command]
 fn stop_app(id: String, state: State<'_, AppState>) -> CommandResult<()> {
-    let processes = state
-        .processes
-        .lock()
-        .map_err(|_| "process manager mutex poisoned".to_string())?;
-    processes.stop(&id).map_err(|err| err.to_string())
-}
-
-#[tauri::command]
-fn list_ports(state: State<'_, AppState>) -> CommandResult<Vec<PortRow>> {
-    let child_pids = {
+    let (preferred_port, name) = {
+        let registry = state
+            .registry
+            .lock()
+            .map_err(|_| "registry mutex poisoned".to_string())?;
+        let app = registry
+            .get(&id)
+            .ok_or_else(|| format!("app not found: {id}"))?;
+        (app.preferred_port, app.name.clone())
+    };
+    let stop_result = {
         let processes = state
             .processes
             .lock()
             .map_err(|_| "process manager mutex poisoned".to_string())?;
-        processes.running_pids().into_iter().collect::<HashSet<_>>()
+        processes.stop(&id)
     };
-
-    ports::list_listeners(false)
-        .map(|rows| {
-            rows.into_iter()
-                .filter(|row| row.is_loopback || child_pids.contains(&row.pid))
-                .collect()
-        })
-        .map_err(|err| err.to_string())
+    match stop_result {
+        Ok(()) => {
+            let _ = history::append(&state.registry_path, "stop", &name);
+            Ok(())
+        }
+        Err(LocalDockError::NotRunning) => {
+            terminate_loopback_for_app(preferred_port)?;
+            let _ = history::append(&state.registry_path, "stop", &name);
+            Ok(())
+        }
+        Err(err) => Err(err.to_string()),
+    }
 }
 
 #[tauri::command]
-fn kill_port(port: u16, pid: u32) -> CommandResult<()> {
+fn list_ports(state: State<'_, AppState>) -> CommandResult<Vec<PortRow>> {
+    let managed_pids = {
+        let processes = state
+            .processes
+            .lock()
+            .map_err(|_| "process manager mutex poisoned".to_string())?;
+        processes
+            .running_tree_pids()
+            .into_iter()
+            .collect::<HashSet<_>>()
+    };
+
+    let mut rows = ports::list_listeners(false)
+        .map(|rows| ports::filter_display_rows(rows, &managed_pids))
+        .map_err(|err| err.to_string())?;
+    let hints = {
+        let registry = state
+            .registry
+            .lock()
+            .map_err(|_| "registry mutex poisoned".to_string())?;
+        registry
+            .apps
+            .iter()
+            .map(|app| AppHint {
+                name: app.name.clone(),
+                cwd: app.cwd.clone(),
+                preferred_port: app.preferred_port,
+            })
+            .collect::<Vec<_>>()
+    };
+    ports::attach_app_labels(&mut rows, &hints);
+    Ok(rows)
+}
+
+#[tauri::command]
+fn kill_port(port: u16, pid: u32, state: State<'_, AppState>) -> CommandResult<()> {
     if pid == 0 {
         return Err("refusing to kill unknown pid".to_string());
     }
@@ -208,6 +273,24 @@ fn kill_port(port: u16, pid: u32) -> CommandResult<()> {
         .find(|row| row.port == port && row.pid == pid && row.is_loopback)
         .ok_or_else(|| "no matching loopback listener for port and pid".to_string())?;
 
+    terminate_pid(listener.pid)?;
+    let _ = history::append(
+        &state.registry_path,
+        "kill",
+        &format!("{}:{} pid {}", listener.addr, listener.port, listener.pid),
+    );
+    Ok(())
+}
+
+fn terminate_loopback_for_app(port: Option<u16>) -> CommandResult<()> {
+    let Some(port) = port else {
+        return Err("not running".to_string());
+    };
+    let listener = ports::list_listeners(true)
+        .map_err(|err| err.to_string())?
+        .into_iter()
+        .find(|row| row.port == port && row.is_loopback)
+        .ok_or_else(|| format!("no loopback listener on port {port}"))?;
     terminate_pid(listener.pid)
 }
 
@@ -233,6 +316,88 @@ fn support_url(kind: &str) -> CommandResult<&'static str> {
         "github" => Ok("https://github.com/Mr-Aurevo-X"),
         _ => Err("unsupported support link".to_string()),
     }
+}
+
+#[tauri::command]
+fn get_suite_settings() -> CommandResult<suite_settings::SuiteSettings> {
+    suite_settings::load()
+}
+
+#[tauri::command]
+fn set_suite_language(lang: String) -> CommandResult<suite_settings::SuiteSettings> {
+    suite_settings::set_language(&lang)
+}
+
+#[tauri::command]
+fn set_check_github_updates(enabled: bool) -> CommandResult<suite_settings::SuiteSettings> {
+    suite_settings::set_check_github_updates(enabled)
+}
+
+#[tauri::command]
+fn get_app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct AboutPath {
+    id: String,
+    path: String,
+}
+
+#[tauri::command]
+fn get_about_local_paths(state: State<'_, AppState>) -> CommandResult<Vec<AboutPath>> {
+    let mut paths = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            if !suite_settings::looks_like_clone_path(dir) {
+                paths.push(AboutPath {
+                    id: "app".into(),
+                    path: dir.display().to_string(),
+                });
+            }
+        }
+    }
+    paths.push(AboutPath {
+        id: "registry".into(),
+        path: display_path(&state.registry_path),
+    });
+    if let Some(dir) = state.registry_path.parent() {
+        paths.push(AboutPath {
+            id: "history".into(),
+            path: display_path(&dir.join("history.json")),
+        });
+    }
+    paths.push(AboutPath {
+        id: "settings".into(),
+        path: suite_settings::settings_path()?.display().to_string(),
+    });
+    Ok(paths)
+}
+
+#[tauri::command]
+fn check_github_latest() -> CommandResult<github_latest::LatestCheck> {
+    let settings = suite_settings::load()?;
+    github_latest::check_latest(env!("CARGO_PKG_VERSION"), settings.check_github_updates)
+}
+
+#[tauri::command]
+fn open_release(url: Option<String>) -> CommandResult<()> {
+    let raw = url.unwrap_or_else(|| github_latest::RELEASES_PAGE.to_string());
+    let url = github_latest::allowlisted_release_url(&raw)?;
+    open_url(&url)
+}
+
+#[tauri::command]
+fn pick_folder() -> CommandResult<Option<String>> {
+    let picked = rfd::FileDialog::new()
+        .set_title("LocalDock")
+        .pick_folder();
+    Ok(picked.map(|path| display_path(&path)))
+}
+
+#[tauri::command]
+fn list_history(state: State<'_, AppState>) -> CommandResult<Vec<history::HistoryEvent>> {
+    history::list(&state.registry_path)
 }
 
 fn config_path() -> CommandResult<PathBuf> {
@@ -316,24 +481,30 @@ fn snapshot(
         allowed_roots: registry
             .allowed_roots
             .iter()
-            .map(|root| root.display().to_string())
+            .map(|root| display_path(root))
             .collect(),
         apps: registry
             .apps
             .iter()
             .map(|app| {
                 let child_pid = processes.pid(&app.id);
-                app_to_view(app, child_pid.is_some(), child_pid)
+                let tree_pids = processes.tree_pids(&app.id);
+                app_to_view(app, child_pid.is_some(), child_pid, tree_pids)
             })
             .collect(),
     }
 }
 
-fn app_to_view(app: &AppEntry, running: bool, child_pid: Option<u32>) -> AppView {
+fn app_to_view(
+    app: &AppEntry,
+    running: bool,
+    child_pid: Option<u32>,
+    tree_pids: Vec<u32>,
+) -> AppView {
     AppView {
         id: app.id.clone(),
         name: app.name.clone(),
-        cwd: app.cwd.display().to_string(),
+        cwd: display_path(&app.cwd),
         command: app.command.clone(),
         args: app.args.clone(),
         preferred_port: app.preferred_port,
@@ -341,13 +512,14 @@ fn app_to_view(app: &AppEntry, running: bool, child_pid: Option<u32>) -> AppView
         enabled: app.enabled,
         running,
         child_pid,
+        tree_pids,
     }
 }
 
 fn proposal_to_view(app: ProposedApp) -> ProposedAppView {
     ProposedAppView {
         name: app.name,
-        cwd: app.cwd.display().to_string(),
+        cwd: display_path(&app.cwd),
         command: app.command,
         args: app.args,
         preferred_port: app.preferred_port,
@@ -419,10 +591,16 @@ fn open_url(url: &str) -> CommandResult<()> {
 #[cfg(windows)]
 fn terminate_pid(pid: u32) -> CommandResult<()> {
     let pid_text = pid.to_string();
-    let status = Command::new("taskkill.exe")
-        .args(["/PID", pid_text.as_str(), "/T", "/F"])
+    let system_root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+    let taskkill = PathBuf::from(system_root)
+        .join("System32")
+        .join("taskkill.exe");
+    let mut cmd = Command::new(taskkill);
+    cmd.args(["/PID", pid_text.as_str(), "/T", "/F"]);
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    let status = cmd
         .status()
-        .map_err(|err| err.to_string())?;
+        .map_err(|err| format!("kill port process: {err}"))?;
     status_to_result(status, "kill port process")
 }
 
@@ -464,7 +642,16 @@ fn main() {
             list_ports,
             kill_port,
             open_loopback,
-            open_support
+            open_support,
+            get_suite_settings,
+            set_suite_language,
+            set_check_github_updates,
+            get_app_version,
+            get_about_local_paths,
+            check_github_latest,
+            open_release,
+            pick_folder,
+            list_history,
         ])
         .run(tauri::generate_context!())
         .expect("run LocalDock Tauri application");

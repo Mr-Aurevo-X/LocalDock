@@ -1,117 +1,226 @@
 <!doctype html>
-<html lang="en" data-preset="void-glow">
+<html lang="fr" data-preset="void-glow">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="author" content="Mr-Aurevo-X" />
     <title>LocalDock</title>
+    <link rel="stylesheet" href="vendor/pc-command-kit/components/tool-chrome.css" />
+    <link rel="stylesheet" href="vendor/pc-command-kit/components/hub-about.css" />
     <link rel="stylesheet" href="styles.css" />
+    <script defer src="i18n.js"></script>
+    <script defer src="chrome.js"></script>
     <script defer src="app.js"></script>
   </head>
-  <body class="theme-void-glow">
+  <body class="theme-void-glow frameless" data-tool-title="LocalDock" data-tool-subtitle="">
+    <header class="tool-titlebar" id="toolTitlebar">
+      <div class="tool-title" id="toolTitleText" data-tauri-drag-region>LocalDock</div>
+      <div class="win-controls text" role="group" aria-label="Fenêtre">
+        <button type="button" class="win-btn" id="toolWinMin" title="Réduire" aria-label="Réduire">min</button>
+        <button type="button" class="win-btn" id="toolWinMax" title="Agrandir" aria-label="Agrandir">max</button>
+        <button type="button" class="win-btn win-close" id="toolWinClose" title="Fermer" aria-label="Fermer">close</button>
+      </div>
+    </header>
+
     <main class="shell">
+      <div class="update-banner" id="updateBanner" hidden role="status" aria-live="polite">
+        <div class="update-banner-text">
+          <strong data-i18n="updateTitle">Nouvelle version disponible</strong>
+          <span id="updateDetail"></span>
+        </div>
+        <div class="update-banner-actions">
+          <button type="button" class="accent" id="btnOpenRelease" data-i18n="btnOpenRelease">Ouvrir sur GitHub</button>
+          <button type="button" id="btnUpdateLater" data-i18n="btnLater">Plus tard</button>
+        </div>
+      </div>
+
       <header class="hero">
         <div>
-          <p class="eyebrow">Loopback-only · Void Glow</p>
+          <p class="eyebrow" data-i18n="eyebrow">Loopback only</p>
           <h1>LocalDock</h1>
-          <p class="lede">
-            Register local projects, start them with loopback defaults, and inspect
-            listening loopback ports without an HTTP portal.
+          <p class="lede" data-i18n="lede">
+            Enregistre tes projets locaux, lance-les en loopback, inspecte les ports d’écoute — sans portail HTTP.
           </p>
         </div>
         <div class="status-card">
-          <span class="label">Registry</span>
-          <code id="registryPath">Loading...</code>
-          <button id="openAbout" class="accent" type="button">À propos · Legal · Dons</button>
+          <span class="label" data-i18n="registryLabel">Registre</span>
+          <code id="registryPath">…</code>
+          <p class="registry-hint" data-i18n="registryHint">
+            Fichier local à ce PC et à ce compte Windows — pas partagé si tu installes ailleurs.
+          </p>
         </div>
       </header>
 
-      <section class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Roots + Scan</h2>
-            <p>Add trusted roots, then scan them for dev apps.</p>
-          </div>
-        </div>
-        <form id="rootForm" class="row-form">
-          <input id="rootPath" type="text" placeholder="C:\Projects or /home/me/projects" />
-          <button class="accent" type="submit">Add Root</button>
-        </form>
-        <div id="roots" class="chips"></div>
-        <div id="scanResults" class="cards"></div>
-      </section>
+      <nav class="tab-switch" id="tabSwitch" role="tablist" data-i18n-aria="tabsAria" aria-label="Sections">
+        <button type="button" class="tab-seg is-active" data-tab="home" role="tab" aria-selected="true" data-i18n="tabHome">Accueil</button>
+        <button type="button" class="tab-seg" data-tab="ports" role="tab" aria-selected="false" data-i18n="tabPorts">Ports ouverts</button>
+        <button type="button" class="tab-seg" data-tab="history" role="tab" aria-selected="false" data-i18n="tabHistory">Historique</button>
+      </nav>
 
-      <section class="grid">
+      <section class="tab-panel" id="tab-home" data-tab-panel="home">
+        <div class="home-kpis" id="homeKpis">
+          <article class="kpi-card">
+            <span class="kpi-value" id="kpiPorts">0</span>
+            <span class="kpi-label" data-i18n="kpiPorts">Ports ouverts</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value" id="kpiApps">0</span>
+            <span class="kpi-label" data-i18n="kpiApps">Apps enregistrées</span>
+          </article>
+          <article class="kpi-card">
+            <span class="kpi-value" id="kpiRoots">0</span>
+            <span class="kpi-label" data-i18n="kpiRoots">Racines de confiance</span>
+          </article>
+        </div>
+
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Apps</h2>
-              <p>Start and stop registered apps through local IPC.</p>
+              <h2 data-i18n="rootsTitle">Racines + Scan</h2>
+              <p data-i18n="rootsHelp">Ajoute des dossiers de confiance, puis scanne les apps de dev.</p>
             </div>
-            <button id="refreshApps" type="button">Refresh</button>
           </div>
-          <div id="apps" class="cards"></div>
+          <form id="rootForm" class="row-form">
+            <input id="rootPath" type="text" data-i18n-placeholder="rootPlaceholder" placeholder="C:\Projects ou /home/me/projects" />
+            <button type="button" id="btnBrowseRoot" data-i18n="browse">Parcourir</button>
+            <button class="accent" type="submit" data-i18n="addRoot">Ajouter</button>
+          </form>
+          <div id="roots" class="chips"></div>
+          <div id="scanResults" class="cards"></div>
         </section>
 
         <section class="panel">
           <div class="panel-head">
             <div>
-              <h2>Ports</h2>
-              <p>Loopback listeners, plus LAN exposure warnings for running LocalDock apps.</p>
+              <h2 data-i18n="appsTitle">Apps</h2>
+              <p data-i18n="appsHelp">Démarre et arrête les apps enregistrées via IPC local.</p>
             </div>
-            <button id="refreshPorts" type="button">Refresh</button>
+            <button id="refreshApps" type="button" data-i18n="refresh">Actualiser</button>
+          </div>
+          <div id="apps" class="cards"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-ports" data-tab-panel="ports" hidden>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 data-i18n="portsTitle">Ports</h2>
+              <p data-i18n="portsHelp">Écoutes loopback, plus alertes d’exposition LAN pour les apps LocalDock.</p>
+            </div>
+            <button id="refreshPorts" type="button" data-i18n="refresh">Actualiser</button>
           </div>
           <div id="ports" class="cards"></div>
         </section>
       </section>
 
-      <footer class="site-foot">
-        <p>© 2026 Mr-Aurevo-X · LocalDock · PolyForm Noncommercial · fourni « en l’état »</p>
-        <p class="meta">
-          Pas de collecte éditeur · pas de MAJ auto · dons volontaires (pas un prix de licence)
-        </p>
-        <div class="support-row">
-          <button type="button" data-support="discord">Discord</button>
-          <button type="button" class="accent" data-support="paypal">PayPal</button>
-          <button type="button" class="accent" data-support="revolut">Revolut</button>
-          <button type="button" data-support="github">GitHub</button>
-          <button id="openAboutFoot" type="button">CGU / Confidentialité</button>
+      <section class="tab-panel" id="tab-history" data-tab-panel="history" hidden>
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 data-i18n="historyTitle">Historique</h2>
+              <p data-i18n="historyHelp">Actions locales sur ce PC (scan, enregistrement, start/stop, kill).</p>
+            </div>
+            <button id="refreshHistory" type="button" data-i18n="refresh">Actualiser</button>
+          </div>
+          <div id="history" class="cards"></div>
+        </section>
+      </section>
+
+      <footer class="chrome-foot">
+        <div
+          class="hub-lang-switch"
+          id="langSwitch"
+          role="group"
+          data-i18n-aria="langSwitchAria"
+          aria-label="Langue"
+        >
+          <button type="button" class="hub-lang-seg is-active" data-lang="fr" aria-pressed="true">FR</button>
+          <button type="button" class="hub-lang-seg" data-lang="en" aria-pressed="false">EN</button>
         </div>
+        <p class="privacy-note" id="privacyNote" data-i18n="privacy">
+          100 % local-first. Seule connexion hors machine : vérif. version GitHub (si activée dans À propos).
+        </p>
+        <div class="hub-support" data-i18n-aria="supportAria" aria-label="Soutien optionnel">
+          <p class="hub-support-note" data-i18n="supportNote">Si le boulot te plaît, un café — sinon profite.</p>
+          <div class="hub-support-links">
+            <button type="button" class="hub-support-btn" data-support="discord" title="Discord">Discord</button>
+            <button type="button" class="hub-support-btn" data-support="paypal" title="PayPal">PayPal</button>
+            <button type="button" class="hub-support-btn" data-support="revolut" title="Revolut">Revolut</button>
+          </div>
+        </div>
+        <button type="button" class="about-btn" id="btnAbout" data-i18n="aboutBtn">À propos</button>
+        <p class="copyright" data-i18n="aboutCopyright">Copyright © 2026 Mr-Aurevo-X — tous droits réservés</p>
       </footer>
 
       <p id="message" class="message" role="status"></p>
     </main>
 
     <dialog id="aboutDialog" class="about-dialog">
-      <form method="dialog" class="about-shell">
-        <header class="about-head">
-          <div>
-            <p class="eyebrow">Mr-Aurevo-X</p>
-            <h2>À propos · LocalDock</h2>
-            <p class="meta">v0.1.0 · loopback launcher · Void Glow</p>
-          </div>
-          <button value="cancel" type="submit">Fermer</button>
-        </header>
-        <p class="about-disclaimer">
-          Logiciel fourni « en l’état ». Vous êtes responsable des processus lancés.
-          Aucune collecte de données par Mr-Aurevo-X. Un don n’achète ni licence ni support.
+      <form method="dialog" class="about-card">
+        <h3 data-i18n="aboutTitle">À propos — LocalDock</h3>
+        <p data-i18n="aboutIntro">
+          Lanceur local-only pour serveurs de dev en loopback (Mr-Aurevo-X). Gratuit, sans compte. Pas de portail HTTP.
         </p>
-        <div class="about-support">
-          <p class="meta">Si le boulot te plaît, un café — sinon profite.</p>
-          <div class="support-row">
-            <button type="button" data-support="discord">Discord</button>
-            <button type="button" class="accent" data-support="paypal">PayPal</button>
-            <button type="button" class="accent" data-support="revolut">Revolut</button>
+        <ul class="legal-strip">
+          <li data-i18n="aboutLegalLocal">100 % local-first — pas de télémétrie</li>
+          <li data-i18n="aboutLegalGh">Seule connexion hors machine : vérif. version GitHub (option ci-dessous)</li>
+          <li data-i18n="aboutLegalOff">Si vérif. désactivée : zéro réseau hors actions utilisateur</li>
+        </ul>
+        <p class="about-note" id="aboutVersion"></p>
+        <label class="about-toggle">
+          <input type="checkbox" id="chkGithubUpdates" checked />
+          <span data-i18n="aboutToggle">Vérifier les nouvelles versions sur GitHub</span>
+        </label>
+        <p class="about-note" id="aboutUpdateHint" data-i18n="aboutHintOn">
+          Quand activé : un appel API GitHub au démarrage (lecture seule, pas de téléchargement).
+        </p>
+        <div class="about-repo" aria-label="Dépôt GitHub">
+          <label class="about-repo-label" for="aboutRepoUrl" data-i18n="aboutRepoLabel">Repo GitHub (releases)</label>
+          <div class="about-repo-row">
+            <input
+              type="text"
+              id="aboutRepoUrl"
+              class="about-repo-input"
+              readonly
+              value="https://github.com/Mr-Aurevo-X/LocalDock"
+              spellcheck="false"
+            />
+            <button type="button" class="btn accent" id="btnCopyRepo" data-i18n="aboutCopy">Copier</button>
           </div>
+          <p class="about-note" id="aboutCopyHint" hidden data-i18n="aboutCopiedLink">Lien copié.</p>
         </div>
-        <div class="legal-tabs" role="tablist">
-          <button type="button" class="legal-tab active" data-doc="privacy">Confidentialité</button>
-          <button type="button" class="legal-tab" data-doc="terms">CGU</button>
-          <button type="button" class="legal-tab" data-doc="mentions">Mentions</button>
-          <button type="button" class="legal-tab" data-doc="notices">Licences</button>
-          <button type="button" class="legal-tab" data-lang="en">EN</button>
-          <button type="button" class="legal-tab" data-lang="fr">FR</button>
+        <div class="about-paths" id="aboutPaths" data-i18n-aria="aboutPathsAria" aria-label="Chemins locaux">
+          <p class="about-repo-label" data-i18n="aboutPathsTitle">Chemins locaux (désinstall / ménage)</p>
+          <p class="about-note" data-i18n="aboutPathsIntro">
+            Identifie clairement quoi supprimer. Les préférences Mr-Aurevo-X sont partagées entre apps.
+          </p>
+          <div class="about-paths-list" id="aboutPathsList"></div>
+          <p class="about-note" id="aboutPathCopyHint" hidden data-i18n="aboutCopiedPath">Chemin copié.</p>
         </div>
-        <pre id="legalBody" class="legal-body" aria-live="polite"></pre>
+        <div class="about-legal-links" role="group" data-i18n-aria="aboutLegalAria" aria-label="Documents légaux">
+          <button type="button" class="btn ghost" data-legal="terms" data-i18n="aboutLegalTerms">CGU</button>
+          <button type="button" class="btn ghost" data-legal="privacy" data-i18n="aboutLegalPrivacy">Confidentialité</button>
+          <button type="button" class="btn ghost" data-legal="mentions" data-i18n="aboutLegalMentions">Mentions</button>
+          <button type="button" class="btn ghost" data-legal="notices" data-i18n="aboutLegalNotices">Notices</button>
+        </div>
+        <pre class="about-legal-body" id="aboutLegalBody" hidden></pre>
+        <p class="copyright" data-i18n="aboutCopyright">Copyright © 2026 Mr-Aurevo-X — tous droits réservés</p>
+        <p class="about-note" data-i18n="aboutRedistrib">
+          Redistribution, reverse engineering ou suppression du copyright interdits sans accord écrit.
+        </p>
+        <button type="submit" class="btn accent" data-i18n="aboutClose">Fermer</button>
+      </form>
+    </dialog>
+
+    <dialog id="confirmDialog" class="confirm-dialog">
+      <form method="dialog" class="confirm-card">
+        <h3 id="confirmTitle" data-i18n="confirmTitle">Confirmer</h3>
+        <p id="confirmBody"></p>
+        <div class="card-actions">
+          <button value="cancel" type="submit" data-i18n="confirmCancel">Annuler</button>
+          <button class="accent" value="ok" type="submit" data-i18n="confirmOk">Confirmer</button>
+        </div>
       </form>
     </dialog>
   </body>

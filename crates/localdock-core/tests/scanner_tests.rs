@@ -42,7 +42,9 @@ fn scan_root_skips_plain_node_and_ambiguous_python() {
         "package.json without dev script must not be proposed"
     );
     assert!(
-        !proposals.iter().any(|p| p.cwd.ends_with("python-ambiguous")),
+        !proposals
+            .iter()
+            .any(|p| p.cwd.ends_with("python-ambiguous")),
         "ambiguous python layout must not be auto-proposed"
     );
 }
@@ -100,6 +102,18 @@ fn scan_root_respects_max_depth() {
         limited.is_empty(),
         "depth 1 should not reach nested/apps/web: {limited:?}"
     );
+}
+
+#[test]
+fn scan_root_finds_dev_local_script_and_js_port() {
+    let root = fixtures_root();
+    let proposals = scan_root(&root, 3).expect("scan should succeed");
+
+    let lounge = find_proposal(&proposals, "fixture-lounge");
+    assert_eq!(lounge.command, "pnpm");
+    assert_eq!(lounge.args, vec!["run", "dev:local"]);
+    assert_eq!(lounge.preferred_port, Some(4180));
+    assert!(lounge.cwd.ends_with("dev-local-app"));
 }
 
 #[test]

@@ -1,13 +1,14 @@
-Licenses / notices — LocalDock ({{PRODUCT}})
+Licenses / notices — LocalDock
 
-Mr-Aurevo-X code: PolyForm Noncommercial License 1.0.0 (root `LICENSE`).
+Mr-Aurevo-X source: PolyForm Noncommercial License 1.0.0 (`LICENSE`). Marks: `TRADEMARK.md`.
 
-Third-party components (depending on build):
-- Rust / cargo ecosystem crates (individual upstream licenses)
-- Tauri 2 + wry + WebView2 (Windows) / webkitgtk (Linux)
-- serde / uuid / thiserror / windows-sys (platform-dependent)
+Possible third-party components:
+- Rust / crates.io (each crate’s license)
+- Tauri 2
+- Microsoft Edge WebView2 Runtime (Windows) / WebKitGTK (Linux)
+- curl (optional GitHub Latest check)
+- UI fonts (their respective licenses)
 
 Upstream licenses apply to those components.
 
-Software is provided without automatic updates and without commitment to future versions.
-Keep About / legal texts / copyright notices.
+The app ships with no automatic updater and no commitment to future versions.

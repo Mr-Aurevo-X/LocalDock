@@ -1,15 +1,15 @@
-Legal notice — LocalDock
-Product: {{PRODUCT}}
+Legal notices — LocalDock
+Product: LocalDock
 Publisher: Mr-Aurevo-X
 Copyright © 2026 Mr-Aurevo-X. All rights reserved.
 
-“Mr-Aurevo-X” is the publisher. {{PRODUCT}} is a local loopback launcher for development servers.
+“LocalDock” means this application. “Mr-Aurevo-X” means the publisher.
 
-Each UI may show: “© 2026 Mr-Aurevo-X”. Full legal text lives in About.
+Windows may show “© 2026 Mr-Aurevo-X”. Details (terms, privacy, licenses) live in About.
 
-Contact / repos: GitHub organization Mr-Aurevo-X  
-Repo: https://github.com/Mr-Aurevo-X/LocalDock
+Contact / repo: https://github.com/Mr-Aurevo-X/LocalDock
+Release hosting: GitHub (Microsoft)
 
-Software is free for non-commercial use (`LICENSE` PolyForm Noncommercial 1.0.0), with no automatic updates and no commitment to future versions.
+Software is free for non-commercial use (`LICENSE`), with no automatic updater and no commitment to future versions.
 
-Optional support (opens the browser): Discord, PayPal, Revolut — a donation is not a license fee.
+Optional support (a click leaves the app): Discord, PayPal, Revolut.

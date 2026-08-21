@@ -1,13 +1,14 @@
-Licences / notices — LocalDock ({{PRODUCT}})
+Licences / notices — LocalDock
 
-Code Mr-Aurevo-X : PolyForm Noncommercial License 1.0.0 (`LICENSE` à la racine du dépôt).
+Code Mr-Aurevo-X : PolyForm Noncommercial License 1.0.0 (`LICENSE`). Marque : `TRADEMARK.md`.
 
-Composants tiers (selon build) :
-- Rust / cargo ecosystem crates (licences amont individuelles)
-- Tauri 2 + wry + WebView2 (Windows) / webkitgtk (Linux)
-- serde / uuid / thiserror / windows-sys (selon plateforme)
+Composants tiers possibles :
+- Rust / crates.io (licences de chaque crate)
+- Tauri 2
+- Microsoft Edge WebView2 Runtime (Windows) / WebKitGTK (Linux)
+- curl (appel optionnel GitHub Latest)
+- Polices UI (licences des familles utilisées)
 
 Les licences amont s’appliquent à ces composants.
 
-Logiciel fourni sans mise à jour automatique et sans engagement de versions futures.
-Conserver À propos / textes légaux / mentions de copyright.
+Application fournie sans mise à jour automatique et sans engagement de versions futures.
