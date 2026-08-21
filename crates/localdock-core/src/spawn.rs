@@ -91,6 +91,38 @@ impl ProcessManager {
         ids.sort();
         ids
     }
+
+    pub fn pid(&self, app_id: &str) -> Option<u32> {
+        let mut children = self
+            .children
+            .lock()
+            .expect("process manager mutex poisoned");
+        match children.get_mut(app_id) {
+            Some(child) => match child.try_wait() {
+                Ok(None) => Some(child.id()),
+                Ok(Some(_)) | Err(_) => {
+                    children.remove(app_id);
+                    None
+                }
+            },
+            None => None,
+        }
+    }
+
+    pub fn running_pids(&self) -> Vec<u32> {
+        let mut children = self
+            .children
+            .lock()
+            .expect("process manager mutex poisoned");
+        children.retain(|_, child| matches!(child.try_wait(), Ok(None)));
+
+        let mut pids = children
+            .values()
+            .map(|child| child.id())
+            .collect::<Vec<_>>();
+        pids.sort_unstable();
+        pids
+    }
 }
 
 pub fn start_command(

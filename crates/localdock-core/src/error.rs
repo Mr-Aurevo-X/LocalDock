@@ -12,6 +12,8 @@ pub enum LocalDockError {
     AppNotFound(String),
     #[error("invalid command")]
     InvalidCommand,
+    #[error("invalid registry app {app}: {reason}")]
+    InvalidRegistryApp { app: String, reason: String },
     #[error("already running")]
     AlreadyRunning,
     #[error("not running")]

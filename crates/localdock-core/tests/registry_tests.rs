@@ -27,6 +27,65 @@ fn registry_round_trip() {
 }
 
 #[test]
+fn load_rejects_tampered_command_with_app_name() {
+    let root = temp_test_dir();
+    let child = root.join("proj");
+    std::fs::create_dir_all(&child).unwrap();
+    let path = root.join("apps.json");
+    let mut reg = Registry::default_empty();
+    reg.allowed_roots.push(root.clone());
+    reg.add_app(AppEntry {
+        id: Uuid::new_v4().to_string(),
+        name: "tampered-command".into(),
+        cwd: child,
+        command: "npm".into(),
+        args: vec![],
+        preferred_port: None,
+        force_loopback: true,
+        enabled: true,
+    })
+    .unwrap();
+    reg.apps[0].command = "npm run".into();
+    reg.save(&path).unwrap();
+
+    let err = Registry::load(&path).unwrap_err();
+    assert!(matches!(err, LocalDockError::InvalidRegistryApp { .. }));
+    assert!(err.to_string().contains("tampered-command"));
+    cleanup_dir(&root);
+}
+
+#[test]
+fn load_rejects_tampered_cwd_with_app_name() {
+    let root = temp_test_dir();
+    let child = root.join("proj");
+    std::fs::create_dir_all(&child).unwrap();
+    let other = std::env::temp_dir().join(format!("ld-reg-other-{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&other).unwrap();
+    let path = root.join("apps.json");
+    let mut reg = Registry::default_empty();
+    reg.allowed_roots.push(root.clone());
+    reg.add_app(AppEntry {
+        id: Uuid::new_v4().to_string(),
+        name: "tampered-cwd".into(),
+        cwd: child,
+        command: "npm".into(),
+        args: vec![],
+        preferred_port: None,
+        force_loopback: true,
+        enabled: true,
+    })
+    .unwrap();
+    reg.apps[0].cwd = other.clone();
+    reg.save(&path).unwrap();
+
+    let err = Registry::load(&path).unwrap_err();
+    assert!(matches!(err, LocalDockError::InvalidRegistryApp { .. }));
+    assert!(err.to_string().contains("tampered-cwd"));
+    cleanup_dir(&root);
+    cleanup_dir(&other);
+}
+
+#[test]
 fn add_app_validates_cwd_under_roots() {
     let root = temp_test_dir();
     let child = root.join("proj");

@@ -67,6 +67,9 @@ fn process_manager_tracks_and_stops_app() {
     manager.start(&app).unwrap();
     assert!(manager.is_running(&app_id));
     assert_eq!(manager.running_ids(), vec![app_id.clone()]);
+    let pid = manager.pid(&app_id).expect("running app should have a pid");
+    assert!(pid > 0);
+    assert_eq!(manager.running_pids(), vec![pid]);
 
     manager.stop(&app_id).unwrap();
     assert!(!manager.is_running(&app_id));

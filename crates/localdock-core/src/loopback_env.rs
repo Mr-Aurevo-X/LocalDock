@@ -15,11 +15,24 @@ impl Framework {
     }
 }
 
+fn normalize_framework_token(value: &str) -> String {
+    let basename = value.rsplit(['/', '\\']).next().unwrap_or(value);
+    let lower = basename.to_ascii_lowercase();
+
+    for suffix in [".cmd", ".bat", ".exe", ".js", ".mjs"] {
+        if let Some(stripped) = lower.strip_suffix(suffix) {
+            return stripped.to_string();
+        }
+    }
+
+    lower
+}
+
 fn contains_token(command: &str, args: &[String], token: &str) -> bool {
-    command == token
-        || command.ends_with(&format!("/{token}"))
-        || command.ends_with(&format!("\\{token}"))
-        || args.iter().any(|arg| arg == token)
+    normalize_framework_token(command) == token
+        || args
+            .iter()
+            .any(|arg| normalize_framework_token(arg) == token)
 }
 
 fn detect_framework(command: &str, args: &[String]) -> Option<Framework> {
@@ -35,11 +48,14 @@ fn detect_framework(command: &str, args: &[String]) -> Option<Framework> {
 }
 
 fn has_host_flag(args: &[String], long: &str, short: Option<&str>) -> bool {
-    args.iter().any(|arg| {
-        arg == long
-            || short.is_some_and(|s| arg == s)
-            || arg.starts_with(&format!("{long}="))
-            || short.is_some_and(|s| arg.starts_with(&format!("{s}=")))
+    args.iter().enumerate().any(|(idx, arg)| {
+        let matches_flag = arg == long || short.is_some_and(|s| arg == s);
+        let has_inline_value = arg.starts_with(&format!("{long}="))
+            || short.is_some_and(|s| arg.starts_with(&format!("{s}=")));
+        let has_separate_value =
+            matches_flag && args.get(idx + 1).is_some_and(|next| !next.starts_with('-'));
+
+        has_inline_value || has_separate_value
     })
 }
 
@@ -60,7 +76,10 @@ pub fn apply_loopback(
     args: &[String],
     preferred_port: Option<u16>,
 ) -> (Vec<(String, String)>, Vec<String>) {
-    let mut env = vec![("HOST".to_string(), LOOPBACK_HOST.to_string())];
+    let mut env = vec![
+        ("HOST".to_string(), LOOPBACK_HOST.to_string()),
+        ("HOSTNAME".to_string(), LOOPBACK_HOST.to_string()),
+    ];
     if let Some(port) = preferred_port {
         env.push(("PORT".to_string(), port.to_string()));
     }

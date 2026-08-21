@@ -71,7 +71,9 @@ impl Registry {
 
     pub fn load(path: &Path) -> Result<Self, LocalDockError> {
         let data = std::fs::read_to_string(path)?;
-        serde_json::from_str(&data).map_err(LocalDockError::from)
+        let mut registry: Self = serde_json::from_str(&data).map_err(LocalDockError::from)?;
+        registry.revalidate_apps()?;
+        Ok(registry)
     }
 
     pub fn save(&mut self, path: &Path) -> Result<(), LocalDockError> {
@@ -101,6 +103,32 @@ impl Registry {
 
     pub fn get(&self, id: &str) -> Option<&AppEntry> {
         self.apps.iter().find(|app| app.id == id)
+    }
+
+    fn revalidate_apps(&mut self) -> Result<(), LocalDockError> {
+        for app in &mut self.apps {
+            let label = app_label(app);
+            validate_command(&app.command).map_err(|err| LocalDockError::InvalidRegistryApp {
+                app: label.clone(),
+                reason: err.to_string(),
+            })?;
+            app.cwd = assert_under_roots(&app.cwd, &self.allowed_roots).map_err(|err| {
+                LocalDockError::InvalidRegistryApp {
+                    app: label.clone(),
+                    reason: err.to_string(),
+                }
+            })?;
+        }
+
+        Ok(())
+    }
+}
+
+fn app_label(app: &AppEntry) -> String {
+    if !app.name.is_empty() {
+        app.name.clone()
+    } else {
+        app.id.clone()
     }
 }
 

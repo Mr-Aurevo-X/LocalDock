@@ -72,6 +72,9 @@ async function loadApps() {
 async function loadPorts() {
   state.ports = await call("list_ports");
   renderPorts();
+  if (state.registry) {
+    renderApps();
+  }
 }
 
 function renderRegistry() {
@@ -109,9 +112,22 @@ function renderApps() {
   }
 
   for (const app of apps) {
+    const lanExposures = lanExposuresForApp(app);
     const card = tag("article", "card");
     card.append(tag("h3", "", app.name));
     card.append(tag("span", app.running ? "badge ok" : "badge", app.running ? "Running" : "Stopped"));
+    if (lanExposures.length > 0) {
+      card.append(tag("span", "badge danger", "LAN EXPOSED"));
+      card.append(
+        tag(
+          "div",
+          "meta warn-text",
+          `Non-loopback listener: ${lanExposures
+            .map((port) => `${port.addr}:${port.port}`)
+            .join(", ")}`,
+        ),
+      );
+    }
     card.append(tag("div", "meta", app.cwd));
     card.append(tag("code", "", `${app.command} ${app.args.join(" ")}`.trim()));
 
@@ -145,25 +161,37 @@ function renderApps() {
 function renderPorts() {
   clear(els.ports);
   if (state.ports.length === 0) {
-    els.ports.append(tag("p", "meta", "No loopback listeners found."));
+    els.ports.append(tag("p", "meta", "No loopback listeners or LocalDock LAN exposures found."));
     return;
   }
 
   for (const port of state.ports) {
     const card = tag("article", "card");
     card.append(tag("h3", "", `${port.addr}:${port.port}`));
-    card.append(tag("span", "badge ok", "Loopback"));
+    card.append(tag("span", port.is_loopback ? "badge ok" : "badge danger", port.is_loopback ? "Loopback" : "LAN EXPOSED"));
     card.append(tag("div", "meta", `PID ${port.pid || "unknown"} ${port.process_name || ""}`.trim()));
 
-    const actions = tag("div", "card-actions");
-    const kill = tag("button", "danger", "Kill");
-    kill.type = "button";
-    kill.disabled = !port.pid;
-    kill.addEventListener("click", () => killPort(port.port, port.pid));
-    actions.append(kill);
-    card.append(actions);
+    if (port.is_loopback) {
+      const actions = tag("div", "card-actions");
+      const kill = tag("button", "danger", "Kill");
+      kill.type = "button";
+      kill.disabled = !port.pid;
+      kill.addEventListener("click", () => killPort(port.port, port.pid));
+      actions.append(kill);
+      card.append(actions);
+    } else {
+      card.append(tag("div", "meta warn-text", "This running LocalDock app is listening beyond loopback."));
+    }
     els.ports.append(card);
   }
+}
+
+function lanExposuresForApp(app) {
+  if (!app.running || !app.child_pid) {
+    return [];
+  }
+
+  return state.ports.filter((port) => port.pid === app.child_pid && !port.is_loopback);
 }
 
 function renderProposals() {

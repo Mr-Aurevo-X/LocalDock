@@ -4,6 +4,7 @@ use localdock_core::registry::{AppEntry, Registry};
 use localdock_core::scanner::{scan_root, ProposedApp};
 use localdock_core::spawn::ProcessManager;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
@@ -32,6 +33,7 @@ struct AppView {
     force_loopback: bool,
     enabled: bool,
     running: bool,
+    child_pid: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -176,8 +178,22 @@ fn stop_app(id: String, state: State<'_, AppState>) -> CommandResult<()> {
 }
 
 #[tauri::command]
-fn list_ports() -> CommandResult<Vec<PortRow>> {
-    ports::list_listeners(true).map_err(|err| err.to_string())
+fn list_ports(state: State<'_, AppState>) -> CommandResult<Vec<PortRow>> {
+    let child_pids = {
+        let processes = state
+            .processes
+            .lock()
+            .map_err(|_| "process manager mutex poisoned".to_string())?;
+        processes.running_pids().into_iter().collect::<HashSet<_>>()
+    };
+
+    ports::list_listeners(false)
+        .map(|rows| {
+            rows.into_iter()
+                .filter(|row| row.is_loopback || child_pids.contains(&row.pid))
+                .collect()
+        })
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -287,12 +303,15 @@ fn snapshot(
         apps: registry
             .apps
             .iter()
-            .map(|app| app_to_view(app, processes.is_running(&app.id)))
+            .map(|app| {
+                let child_pid = processes.pid(&app.id);
+                app_to_view(app, child_pid.is_some(), child_pid)
+            })
             .collect(),
     }
 }
 
-fn app_to_view(app: &AppEntry, running: bool) -> AppView {
+fn app_to_view(app: &AppEntry, running: bool, child_pid: Option<u32>) -> AppView {
     AppView {
         id: app.id.clone(),
         name: app.name.clone(),
@@ -303,6 +322,7 @@ fn app_to_view(app: &AppEntry, running: bool) -> AppView {
         force_loopback: app.force_loopback,
         enabled: app.enabled,
         running,
+        child_pid,
     }
 }
 

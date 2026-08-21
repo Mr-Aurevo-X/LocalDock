@@ -189,6 +189,8 @@ mod platform {
         OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION,
     };
 
+    const TCP_TABLE_READ_RETRIES: usize = 3;
+
     pub fn list_listeners(loopback_only: bool) -> Result<Vec<PortRow>, LocalDockError> {
         let mut rows = Vec::new();
         rows.extend(list_ipv4(loopback_only)?);
@@ -203,7 +205,9 @@ mod platform {
         let mut rows = Vec::new();
 
         for idx in 0..count {
-            let row = read_row::<MIB_TCPROW_OWNER_PID>(&table, idx);
+            let Some(row) = read_row::<MIB_TCPROW_OWNER_PID>(&table, idx) else {
+                break;
+            };
             let addr = IpAddr::V4(Ipv4Addr::from(row.dwLocalAddr.to_ne_bytes()));
             if loopback_only && !addr.is_loopback() {
                 continue;
@@ -226,7 +230,9 @@ mod platform {
         let mut rows = Vec::new();
 
         for idx in 0..count {
-            let row = read_row::<MIB_TCP6ROW_OWNER_PID>(&table, idx);
+            let Some(row) = read_row::<MIB_TCP6ROW_OWNER_PID>(&table, idx) else {
+                break;
+            };
             let addr = IpAddr::V6(Ipv6Addr::from(row.ucLocalAddr));
             if loopback_only && !addr.is_loopback() {
                 continue;
@@ -260,32 +266,48 @@ mod platform {
             return Err(std::io::Error::from_raw_os_error(first_status as i32).into());
         }
 
-        let mut buffer = vec![0u8; size as usize];
-        let status = unsafe {
-            GetExtendedTcpTable(
-                buffer.as_mut_ptr().cast(),
-                &mut size,
-                0,
-                address_family,
-                TCP_TABLE_OWNER_PID_LISTENER,
-                0,
-            )
-        };
-        if status != NO_ERROR {
-            return Err(std::io::Error::from_raw_os_error(status as i32).into());
+        if size == 0 {
+            return Ok(Vec::new());
         }
 
-        Ok(buffer)
+        let mut buffer = vec![0u8; size as usize];
+        for _ in 0..TCP_TABLE_READ_RETRIES {
+            let status = unsafe {
+                GetExtendedTcpTable(
+                    buffer.as_mut_ptr().cast(),
+                    &mut size,
+                    0,
+                    address_family,
+                    TCP_TABLE_OWNER_PID_LISTENER,
+                    0,
+                )
+            };
+            match status {
+                NO_ERROR => return Ok(buffer),
+                ERROR_INSUFFICIENT_BUFFER => buffer.resize(size as usize, 0),
+                _ => return Err(std::io::Error::from_raw_os_error(status as i32).into()),
+            }
+        }
+
+        Err(std::io::Error::from_raw_os_error(ERROR_INSUFFICIENT_BUFFER as i32).into())
     }
 
     fn read_count(table: &[u8]) -> usize {
+        if table.len() < size_of::<u32>() {
+            return 0;
+        }
         let count = unsafe { table.as_ptr().cast::<u32>().read_unaligned() };
         count as usize
     }
 
-    fn read_row<T: Copy>(table: &[u8], idx: usize) -> T {
-        let offset = size_of::<u32>() + (idx * size_of::<T>());
-        unsafe { table.as_ptr().add(offset).cast::<T>().read_unaligned() }
+    fn read_row<T: Copy>(table: &[u8], idx: usize) -> Option<T> {
+        let offset = size_of::<u32>().checked_add(idx.checked_mul(size_of::<T>())?)?;
+        let end = offset.checked_add(size_of::<T>())?;
+        if end > table.len() {
+            return None;
+        }
+
+        Some(unsafe { table.as_ptr().add(offset).cast::<T>().read_unaligned() })
     }
 
     fn port_from_windows(port: u32) -> u16 {
