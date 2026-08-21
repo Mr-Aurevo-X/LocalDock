@@ -1,4 +1,5 @@
 pub mod error;
+pub mod loopback_env;
 pub mod path_guard;
 pub mod registry;
 
