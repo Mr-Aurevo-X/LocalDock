@@ -14,9 +14,13 @@ Lancer.cmd
 
 `Lancer.cmd` prefers `target\release\localdock.exe`, then `target\debug\localdock.exe`.
 
+On Linux, `bash LANCER.sh` builds `target/release/localdock` and copies it to `~/.local/share/localdock/localdock` (avoids `noexec` shares). Flatpak uses `org.gnome.Platform//49` plus the Rust SDK extension; localhost scan/start/stop go through `flatpak-spawn --host`.
+
 ## 2. Official zip
 
 GitHub Release asset `LocalDock.zip` contains the Windows exe plus `Lancer.cmd` and licence files. No installer. Data stays under `%APPDATA%\LocalDock\` (this PC / this Windows user).
+
+Linux Flatpak: `org.mraurevox.LocalDock.flatpak` from `bash packaging/build-flatpak.sh`. Registry under `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/`.
 
 ## 3. No OS-forever promise
 

@@ -5,7 +5,14 @@
 Lanceur **local-only** pour tes serveurs de dev en loopback.  
 **Gratuit** · **100 % local-first** · **Mr-Aurevo-X** · mises à jour **non garanties**
 
-[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
+**v0.1.0** — deux packs officiels, même app, même release :
+
+| | Windows | Linux |
+|---|---|---|
+| **Fichier** | [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) | [`org.mraurevox.LocalDock.flatpak`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak) |
+| **Contenu** | `localdock.exe` + `Lancer.cmd` | runtime GNOME 49, id `org.mraurevox.LocalDock` |
+| **Install** | Extraire → `Lancer.cmd` | `flatpak install --user` (voir plus bas) |
+
 [Toutes les releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
 
 ## Aperçu
@@ -21,9 +28,11 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 - Local-first — **pas de télémétrie éditeur**, **pas de portail HTTP**
 - LocalDock n’écoute **aucun** port ; tes apps enfants sont orientées vers `127.0.0.1`
 - Seule connexion hors machine : vérif. version GitHub **si tu la laisses activée** dans À propos (lecture seule, pas de téléchargement)
-- Le registre (`apps.json`) est **propre à ce PC et à ce compte Windows** — les chemins ne suivent pas une install ailleurs
+- Le registre (`apps.json`) est **propre à ce PC et à ce compte** — les chemins ne suivent pas une install ailleurs
 
 ## Sur ton PC
+
+### Windows
 
 | Quoi | Où |
 |------|-----|
@@ -32,13 +41,47 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 | Historique | `%APPDATA%\LocalDock\history.json` |
 | Préférences | `%LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json` (partagé entre apps) |
 
+### Linux
+
+| Quoi | Où |
+|------|-----|
+| **App (Flatpak)** | `flatpak run org.mraurevox.LocalDock` |
+| Registre Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/apps.json` |
+| Registre natif (sources) | `~/.config/LocalDock/apps.json` |
+| Préférences | `~/.config/Mr-Aurevo-X/user-settings.json` |
+
+Le Flatpak liste et lance les localhost **de l’hôte** (`ss` + `flatpak-spawn --host`), pas seulement le sandbox. Un Windows monté (`/run/media/…`) se scanne ; **Importer Windows** remap `C:\…`.
+
 ## Lancer
 
-1. Télécharge le zip sur la page Releases  
+### Windows
+
+1. Télécharge [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip)  
 2. Extrais où tu veux  
-3. Lance `Lancer.cmd`
+3. Lance `Lancer.cmd` (ou `localdock.exe`)
 
 Windows peut afficher un avertissement : les binaires ne sont **pas signés**. C’est **SmartScreen**, pas un antivirus qui dit « virus ».
+
+### Linux
+
+Prérequis : [Flatpak](https://flatpak.org/setup/) + runtime **GNOME 49** (Flathub).
+
+```bash
+curl -fL -o org.mraurevox.LocalDock.flatpak \
+  https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak
+flatpak install --user -y ./org.mraurevox.LocalDock.flatpak
+# menu applications + raccourci Bureau
+bash packaging/installer-raccourci-flatpak.sh
+# ou sans le dépôt :
+#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
+#      ~/.local/share/applications/
+#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
+#      ~/Bureau/LocalDock.desktop
+#   chmod +x ~/Bureau/LocalDock.desktop ~/.local/share/applications/org.mraurevox.LocalDock.desktop
+flatpak run org.mraurevox.LocalDock
+```
+
+Sources (optionnel, compile Rust) : `bash LANCER.sh` · raccourci natif : `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak : `bash packaging/build-flatpak.sh`.
 
 ## Version officielle uniquement
 

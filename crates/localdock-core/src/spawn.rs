@@ -1,11 +1,15 @@
+use crate::host_exec;
+use crate::launch_resolve;
 use crate::loopback_env;
 use crate::process_tree;
 use crate::registry::{validate_command, AppEntry};
 use crate::LocalDockError;
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::path::{Path, PathBuf};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Stdio};
 use std::sync::Mutex;
+use std::time::Duration;
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -25,25 +29,47 @@ impl ProcessManager {
 
     pub fn start(&self, app: &AppEntry) -> Result<(), LocalDockError> {
         validate_command(&app.command)?;
+        let (command, args) = launch_resolve::resolve_launch(&app.command, &app.args, &app.cwd)?;
+        validate_command(&command)?;
 
         let (env_pairs, final_args) = if app.force_loopback {
-            loopback_env::apply_loopback(&app.command, &app.args, app.preferred_port)
+            loopback_env::apply_loopback(&command, &args, app.preferred_port)
         } else {
-            (Vec::new(), app.args.clone())
+            (Vec::new(), args)
         };
+
+        {
+            let mut children = self
+                .children
+                .lock()
+                .expect("process manager mutex poisoned");
+            if let Some(child) = children.get_mut(&app.id) {
+                if child.try_wait()?.is_none() {
+                    return Err(LocalDockError::AlreadyRunning);
+                }
+                children.remove(&app.id);
+            }
+        }
+
+        let log = std::env::temp_dir().join(format!("localdock-{}.log", app.id));
+        let mut child = start_command_logged(&command, &final_args, &app.cwd, &env_pairs, Some(&log))?;
+        std::thread::sleep(Duration::from_millis(200));
+        if let Some(status) = child.try_wait()? {
+            let tail = std::fs::read_to_string(&log)
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+            return Err(LocalDockError::StartFailed(if tail.is_empty() {
+                format!("le process s’est arrêté ({status})")
+            } else {
+                format!("le process s’est arrêté ({status}): {tail}")
+            }));
+        }
 
         let mut children = self
             .children
             .lock()
             .expect("process manager mutex poisoned");
-        if let Some(child) = children.get_mut(&app.id) {
-            if child.try_wait()?.is_none() {
-                return Err(LocalDockError::AlreadyRunning);
-            }
-            children.remove(&app.id);
-        }
-
-        let child = start_command(&app.command, &final_args, &app.cwd, &env_pairs)?;
         children.insert(app.id.clone(), child);
         Ok(())
     }
@@ -159,14 +185,27 @@ pub fn start_command(
     cwd: &Path,
     env: &[(String, String)],
 ) -> Result<Child, LocalDockError> {
+    start_command_logged(program, args, cwd, env, None)
+}
+
+pub fn start_command_logged(
+    program: &str,
+    args: &[String],
+    cwd: &Path,
+    env: &[(String, String)],
+    log: Option<&Path>,
+) -> Result<Child, LocalDockError> {
     let resolved = resolve_program(program);
-    let mut cmd = Command::new(&resolved);
-    cmd.args(args)
-        .current_dir(cwd)
-        .envs(env.iter().map(|(key, value)| (key, value)))
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
+    let resolved_text = resolved.to_string_lossy();
+    let mut cmd = host_exec::host_command(&resolved_text, args, Some(cwd), env);
+    cmd.stdin(Stdio::null());
+    if let Some(log) = log {
+        let file = File::create(log)?;
+        let err = file.try_clone()?;
+        cmd.stdout(Stdio::from(file)).stderr(Stdio::from(err));
+    } else {
+        cmd.stdout(Stdio::null()).stderr(Stdio::null());
+    }
 
     #[cfg(windows)]
     cmd.creation_flags(CREATE_NO_WINDOW);

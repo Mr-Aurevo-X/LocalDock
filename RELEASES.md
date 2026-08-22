@@ -4,7 +4,11 @@ Official LocalDock binaries ship through GitHub Releases on **this repo**:
 
 **https://github.com/Mr-Aurevo-X/LocalDock/releases**
 
-Pack: **`LocalDock.zip`** (Windows portable: `localdock.exe` + `Lancer.cmd` + licence).  
+Packs:
+
+- **`LocalDock.zip`** — Windows portable (`localdock.exe` + `Lancer.cmd` + licence)
+- **`org.mraurevox.LocalDock.flatpak`** — Linux (GNOME 49), built with `bash packaging/build-flatpak.sh`
+
 There is no hub pack, no `MrAurevoX-Launcher` channel, and no `Launch-Hub-*.zip`.
 
 ## Stable

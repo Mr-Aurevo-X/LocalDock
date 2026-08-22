@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 Mr-Aurevo-X -->
+<component type="desktop-application">
+  <id>org.mraurevox.LocalDock</id>
+  <name>LocalDock</name>
+  <summary>Lanceur local-only pour serveurs de dev en loopback</summary>
+  <description>
+    <p>
+      LocalDock liste les ports localhost, enregistre tes apps de dev et les
+      lance vers 127.0.0.1. L’application n’écoute aucun port.
+    </p>
+    <p>
+      Le Flatpak affiche l’UI dans le runtime GNOME. Le scan des ports, le
+      lancement et l’arrêt passent par l’hôte (flatpak-spawn --host + ss).
+    </p>
+  </description>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-PolyForm-Noncommercial-1.0.0</project_license>
+  <developer id="org.mraurevox">
+    <name>Mr-Aurevo-X</name>
+  </developer>
+  <url type="homepage">https://github.com/Mr-Aurevo-X/LocalDock</url>
+  <launchable type="desktop-id">org.mraurevox.LocalDock.desktop</launchable>
+  <categories>
+    <category>Development</category>
+    <category>Network</category>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>localhost</keyword>
+    <keyword>loopback</keyword>
+    <keyword>ports</keyword>
+    <keyword>dev server</keyword>
+    <keyword>flatpak</keyword>
+  </keywords>
+  <provides>
+    <id>org.mraurevox.LocalDock.desktop</id>
+    <binary>localdock</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-08-22">
+      <description>
+        <p>Première version Linux / Flatpak : scan localhost, lanceur loopback, pont hôte.</p>
+      </description>
+    </release>
+  </releases>
+</component>

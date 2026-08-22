@@ -20,7 +20,6 @@ fn rejects_path_outside_root() {
     assert!(msg.contains("escapes") || msg.contains("not allowed"));
 }
 
-#[cfg(windows)]
 #[test]
 fn display_path_strips_verbatim_prefix() {
     use std::path::PathBuf;

@@ -28,6 +28,17 @@ pub fn process_exe_names() -> HashMap<u32, String> {
     platform::process_exe_names()
 }
 
+pub(crate) fn parse_ps_eo_line(line: &str) -> Option<(u32, u32, String)> {
+    let mut parts = line.split_whitespace();
+    let pid = parts.next()?.parse().ok()?;
+    let ppid = parts.next()?.parse().ok()?;
+    let comm = parts.collect::<Vec<_>>().join(" ");
+    if comm.is_empty() {
+        return None;
+    }
+    Some((pid, ppid, comm))
+}
+
 #[cfg(windows)]
 mod platform {
     use super::*;
@@ -99,6 +110,45 @@ mod platform {
     use std::fs;
 
     pub fn process_parent_map() -> HashMap<u32, u32> {
+        if crate::host_exec::running_in_flatpak() {
+            return host_ps_maps().0;
+        }
+        proc_parent_map()
+    }
+
+    pub fn process_exe_names() -> HashMap<u32, String> {
+        if crate::host_exec::running_in_flatpak() {
+            return host_ps_maps().1;
+        }
+        proc_exe_names()
+    }
+
+    fn host_ps_maps() -> (HashMap<u32, u32>, HashMap<u32, String>) {
+        let mut parents = HashMap::new();
+        let mut names = HashMap::new();
+        let Ok(output) = crate::host_exec::host_command(
+            "ps",
+            &["-eo".into(), "pid=,ppid=,comm=".into()],
+            None,
+            &[],
+        )
+        .output() else {
+            return (parents, names);
+        };
+        if !output.status.success() {
+            return (parents, names);
+        }
+        for line in String::from_utf8_lossy(&output.stdout).lines() {
+            let Some((pid, ppid, comm)) = super::parse_ps_eo_line(line) else {
+                continue;
+            };
+            parents.insert(pid, ppid);
+            names.insert(pid, comm);
+        }
+        (parents, names)
+    }
+
+    fn proc_parent_map() -> HashMap<u32, u32> {
         let mut map = HashMap::new();
         let Ok(entries) = fs::read_dir("/proc") else {
             return map;
@@ -124,7 +174,7 @@ mod platform {
         map
     }
 
-    pub fn process_exe_names() -> HashMap<u32, String> {
+    fn proc_exe_names() -> HashMap<u32, String> {
         let mut map = HashMap::new();
         let Ok(entries) = fs::read_dir("/proc") else {
             return map;
@@ -167,6 +217,14 @@ mod tests {
     fn collect_tree_includes_root_when_snapshot_is_empty() {
         let tree = collect_tree(10, &HashMap::new());
         assert_eq!(tree, HashSet::from([10]));
+    }
+
+    #[test]
+    fn parse_ps_eo_reads_pid_ppid_comm() {
+        let (pid, ppid, comm) = parse_ps_eo_line("  1234   1200 node").expect("ps line");
+        assert_eq!(pid, 1234);
+        assert_eq!(ppid, 1200);
+        assert_eq!(comm, "node");
     }
 
     #[test]

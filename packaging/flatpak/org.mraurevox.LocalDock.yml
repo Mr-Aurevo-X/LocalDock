@@ -1,0 +1,49 @@
+app-id: org.mraurevox.LocalDock
+runtime: org.gnome.Platform
+runtime-version: "49"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: localdock
+finish-args:
+  - --share=ipc
+  - --share=network
+  # X11 réel : fallback-x11 sous KDE Wayland n'expose pas DISPLAY (voir Crypto Tracker).
+  - --socket=x11
+  - --socket=wayland
+  - --device=dri
+  - --env=GDK_BACKEND=x11
+  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
+  - --filesystem=home
+  - --filesystem=/run/media
+  - --filesystem=/media
+  - --filesystem=/mnt
+  - --filesystem=xdg-config/LocalDock:create
+  - --talk-name=org.freedesktop.Flatpak
+  - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.portal.Desktop
+  - --socket=session-bus
+modules:
+  - name: localdock
+    buildsystem: simple
+    build-options:
+      build-args:
+        - --share=network
+      append-path: /usr/lib/sdk/rust-stable/bin
+      env:
+        CARGO_HOME: /run/build/localdock/cargo
+    build-commands:
+      - cargo build --release -p localdock
+      - install -Dm755 target/release/localdock ${FLATPAK_DEST}/bin/localdock
+      - install -Dm644 packaging/flatpak/org.mraurevox.LocalDock.desktop
+        ${FLATPAK_DEST}/share/applications/org.mraurevox.LocalDock.desktop
+      - install -Dm644 packaging/flatpak/org.mraurevox.LocalDock.metainfo.xml
+        ${FLATPAK_DEST}/share/metainfo/org.mraurevox.LocalDock.metainfo.xml
+      - install -Dm644 packaging/flatpak/org.mraurevox.LocalDock.svg
+        ${FLATPAK_DEST}/share/icons/hicolor/scalable/apps/org.mraurevox.LocalDock.svg
+      - install -Dm644 packaging/flatpak/org.mraurevox.LocalDock.png
+        ${FLATPAK_DEST}/share/icons/hicolor/128x128/apps/org.mraurevox.LocalDock.png
+    sources:
+      - type: dir
+        path: ../..

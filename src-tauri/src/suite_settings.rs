@@ -94,6 +94,7 @@ pub fn set_check_github_updates(enabled: bool) -> Result<SuiteSettings, String> 
 pub fn looks_like_clone_path(path: &Path) -> bool {
     let text = path.to_string_lossy();
     text.contains("Dev Central Tree")
+        || text.contains("Dev Tree Linux")
         || text.contains("target\\debug")
         || text.contains("target/debug")
         || text.contains("target\\release")

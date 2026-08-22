@@ -18,4 +18,6 @@ pub enum LocalDockError {
     AlreadyRunning,
     #[error("not running")]
     NotRunning,
+    #[error("{0}")]
+    StartFailed(String),
 }

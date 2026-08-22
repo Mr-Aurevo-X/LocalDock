@@ -5,3 +5,6 @@ dist/
 src-tauri/gen/
 graphify-out/
 _artifacts/
+.flatpak-builder/
+__pycache__/
+.pytest_cache/
