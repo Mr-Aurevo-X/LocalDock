@@ -16,3 +16,5 @@ Données Flatpak : `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/`
 Données natives : `~/.config/LocalDock/`
 
 Sous KDE Wayland / NVIDIA : X11 réel + `WEBKIT_DISABLE_DMABUF_RENDERER` (sinon GDK EPROTO 71).
+
+Mint / Cinnamon : `GTK_MODULES` / `GTK3_MODULES` (`xapp-gtk3-module`) sont unset dans le manifest + `LANCER.sh` (le `.so` n’est pas dans le runtime).

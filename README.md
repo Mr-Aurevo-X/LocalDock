@@ -97,6 +97,8 @@ Depuis un clone : `bash packaging/installer-raccourci-flatpak.sh` (même logique
 
 4. `flatpak run org.mraurevox.LocalDock`
 
+Mint / Cinnamon : le message `Failed to load module "xapp-gtk3-module"` vient de l’hôte (Favorites Nemo). Le pack le coupe ; ce n’est pas un crash. Sur un pack déjà installé : `flatpak override --user --unset-env=GTK_MODULES --unset-env=GTK3_MODULES org.mraurevox.LocalDock`
+
 Sources (optionnel) : `bash LANCER.sh` · raccourci natif : `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak : `bash packaging/build-flatpak.sh`.
 
 ## Version officielle uniquement

@@ -15,6 +15,9 @@ finish-args:
   - --env=GDK_BACKEND=x11
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
   - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
+  # Mint/Cinnamon: host GTK*_MODULES=xapp-gtk3-module is not in the runtime.
+  - --unset-env=GTK_MODULES
+  - --unset-env=GTK3_MODULES
   - --filesystem=home
   - --filesystem=/run/media
   - --filesystem=/media

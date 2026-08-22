@@ -23,7 +23,15 @@ def test_flatpak_manifest_uses_host_bridge() -> None:
     assert "--socket=fallback-x11" not in text
     assert "WEBKIT_DISABLE_DMABUF_RENDERER=1" in text
     assert "GDK_BACKEND=x11" in text
+    # Mint/Cinnamon injects xapp-gtk3-module; GNOME runtime has no host .so.
+    assert "--unset-env=GTK_MODULES" in text
+    assert "--unset-env=GTK3_MODULES" in text
     assert "cargo build --release -p localdock" in text
+
+
+def test_lancer_strips_mint_gtk_modules() -> None:
+    lancer = (ROOT / "LANCER.sh").read_text(encoding="utf-8")
+    assert "unset GTK_MODULES GTK3_MODULES" in lancer
 
 
 def test_desktop_and_metainfo_match_app_id() -> None:

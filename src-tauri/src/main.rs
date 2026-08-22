@@ -836,7 +836,13 @@ fn status_to_result(status: std::process::ExitStatus, action: &str) -> CommandRe
     }
 }
 
+fn strip_host_gtk_modules() {
+    std::env::remove_var("GTK_MODULES");
+    std::env::remove_var("GTK3_MODULES");
+}
+
 fn main() {
+    strip_host_gtk_modules();
     let registry_path = config_path().expect("resolve LocalDock registry path");
     let registry = load_or_create_registry(&registry_path).expect("load LocalDock registry");
 
@@ -871,6 +877,20 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("run LocalDock Tauri application");
+}
+
+#[cfg(test)]
+mod gtk_modules_tests {
+    use super::strip_host_gtk_modules;
+
+    #[test]
+    fn strips_mint_xapp_gtk_modules() {
+        std::env::set_var("GTK_MODULES", "xapp-gtk3-module");
+        std::env::set_var("GTK3_MODULES", "xapp-gtk3-module");
+        strip_host_gtk_modules();
+        assert!(std::env::var_os("GTK_MODULES").is_none());
+        assert!(std::env::var_os("GTK3_MODULES").is_none());
+    }
 }
 
 #[cfg(test)]

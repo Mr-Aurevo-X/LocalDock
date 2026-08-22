@@ -97,6 +97,8 @@ From a clone: `bash packaging/installer-raccourci-flatpak.sh` (same Bureau / Des
 
 4. `flatpak run org.mraurevox.LocalDock`
 
+Mint / Cinnamon: `Failed to load module "xapp-gtk3-module"` is the host Favorites hook. The pack unsets it; it is not a crash. Already installed: `flatpak override --user --unset-env=GTK_MODULES --unset-env=GTK3_MODULES org.mraurevox.LocalDock`
+
 From source (optional): `bash LANCER.sh` · native shortcut: `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak: `bash packaging/build-flatpak.sh`.
 
 ## Official version only
