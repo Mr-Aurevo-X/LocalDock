@@ -9,7 +9,7 @@ const DICT = {
     lede: "Enregistre tes projets locaux, lance-les en loopback, inspecte les ports d’écoute — sans portail HTTP.",
     registryLabel: "Registre",
     registryHint:
-      "Fichier local à ce PC et à ce compte Windows — pas partagé si tu installes ailleurs.",
+      "Fichier local à ce PC et à ce compte — pas partagé si tu installes ailleurs.",
     tabsAria: "Sections",
     tabHome: "Accueil",
     tabPorts: "Ports ouverts",
@@ -131,7 +131,7 @@ const DICT = {
     eyebrow: "Loopback only",
     lede: "Register local projects, start them on loopback, inspect listening ports — no HTTP portal.",
     registryLabel: "Registry",
-    registryHint: "Local to this PC and this Windows account — not shared if you install elsewhere.",
+    registryHint: "Local to this PC and this account — not shared if you install elsewhere.",
     tabsAria: "Sections",
     tabHome: "Home",
     tabPorts: "Open ports",

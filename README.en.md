@@ -46,8 +46,10 @@
 | What | Where |
 |------|-------|
 | **App (Flatpak)** | `flatpak run org.mraurevox.LocalDock` |
-| Flatpak registry | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/apps.json` |
-| Native registry (from source) | `~/.config/LocalDock/apps.json` |
+| Flatpak data | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/` (`apps.json`, `history.json`) |
+| Flatpak prefs | `~/.var/app/org.mraurevox.LocalDock/config/Mr-Aurevo-X/user-settings.json` |
+| Native data (from source) | `~/.config/LocalDock/` |
+| Native prefs | `~/.config/Mr-Aurevo-X/user-settings.json` |
 
 The Flatpak lists and launches **host** localhost apps (`ss` + `flatpak-spawn --host`). A mounted Windows volume (`/run/media/…`) can be scanned; **Import Windows** remaps `C:\…`.
 
@@ -63,21 +65,37 @@ Windows may show a warning: binaries are **not signed**. That is **SmartScreen**
 
 ### Linux
 
-Requires [Flatpak](https://flatpak.org/setup/) + **GNOME 49** runtime (Flathub).
+1. [Flatpak](https://flatpak.org/setup/) + **GNOME 49** runtime:
+
+```bash
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user -y flathub org.gnome.Platform//49
+```
+
+2. Official pack:
 
 ```bash
 curl -fL -o org.mraurevox.LocalDock.flatpak \
   https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak
 flatpak install --user -y ./org.mraurevox.LocalDock.flatpak
-# app menu + desktop shortcut
-bash packaging/installer-raccourci-flatpak.sh
-# or without the repo:
-#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
-#      ~/.local/share/applications/
-#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
-#      ~/Desktop/LocalDock.desktop
-flatpak run org.mraurevox.LocalDock
 ```
+
+3. App menu + desktop shortcut (**no** git clone):
+
+```bash
+mkdir -p ~/.local/share/applications
+SRC=~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop
+cp -f "$SRC" ~/.local/share/applications/
+. ~/.config/user-dirs.dirs 2>/dev/null || true
+DESK="${XDG_DESKTOP_DIR:-$HOME/Bureau}"
+[ -d "$DESK" ] || DESK="$HOME/Desktop"
+cp -f "$SRC" "$DESK/LocalDock.desktop"
+chmod +x ~/.local/share/applications/org.mraurevox.LocalDock.desktop "$DESK/LocalDock.desktop"
+```
+
+From a clone: `bash packaging/installer-raccourci-flatpak.sh` (same Bureau / Desktop fallback).
+
+4. `flatpak run org.mraurevox.LocalDock`
 
 From source (optional): `bash LANCER.sh` · native shortcut: `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak: `bash packaging/build-flatpak.sh`.
 

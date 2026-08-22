@@ -46,9 +46,10 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 | Quoi | Où |
 |------|-----|
 | **App (Flatpak)** | `flatpak run org.mraurevox.LocalDock` |
-| Registre Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/apps.json` |
-| Registre natif (sources) | `~/.config/LocalDock/apps.json` |
-| Préférences | `~/.config/Mr-Aurevo-X/user-settings.json` |
+| Données Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/` (`apps.json`, `history.json`) |
+| Préférences Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/Mr-Aurevo-X/user-settings.json` |
+| Données natives (sources) | `~/.config/LocalDock/` |
+| Préférences natives | `~/.config/Mr-Aurevo-X/user-settings.json` |
 
 Le Flatpak liste et lance les localhost **de l’hôte** (`ss` + `flatpak-spawn --host`), pas seulement le sandbox. Un Windows monté (`/run/media/…`) se scanne ; **Importer Windows** remap `C:\…`.
 
@@ -64,24 +65,39 @@ Windows peut afficher un avertissement : les binaires ne sont **pas signés**. C
 
 ### Linux
 
-Prérequis : [Flatpak](https://flatpak.org/setup/) + runtime **GNOME 49** (Flathub).
+1. [Flatpak](https://flatpak.org/setup/) + runtime **GNOME 49** :
+
+```bash
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user -y flathub org.gnome.Platform//49
+```
+
+2. Pack officiel :
 
 ```bash
 curl -fL -o org.mraurevox.LocalDock.flatpak \
   https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak
 flatpak install --user -y ./org.mraurevox.LocalDock.flatpak
-# menu applications + raccourci Bureau
-bash packaging/installer-raccourci-flatpak.sh
-# ou sans le dépôt :
-#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
-#      ~/.local/share/applications/
-#   cp ~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop \
-#      ~/Bureau/LocalDock.desktop
-#   chmod +x ~/Bureau/LocalDock.desktop ~/.local/share/applications/org.mraurevox.LocalDock.desktop
-flatpak run org.mraurevox.LocalDock
 ```
 
-Sources (optionnel, compile Rust) : `bash LANCER.sh` · raccourci natif : `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak : `bash packaging/build-flatpak.sh`.
+3. Menu applications + raccourci Bureau (**sans** cloner le repo) :
+
+```bash
+mkdir -p ~/.local/share/applications
+SRC=~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop
+cp -f "$SRC" ~/.local/share/applications/
+. ~/.config/user-dirs.dirs 2>/dev/null || true
+DESK="${XDG_DESKTOP_DIR:-$HOME/Bureau}"
+[ -d "$DESK" ] || DESK="$HOME/Desktop"
+cp -f "$SRC" "$DESK/LocalDock.desktop"
+chmod +x ~/.local/share/applications/org.mraurevox.LocalDock.desktop "$DESK/LocalDock.desktop"
+```
+
+Depuis un clone : `bash packaging/installer-raccourci-flatpak.sh` (même logique Bureau / Desktop).
+
+4. `flatpak run org.mraurevox.LocalDock`
+
+Sources (optionnel) : `bash LANCER.sh` · raccourci natif : `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak : `bash packaging/build-flatpak.sh`.
 
 ## Version officielle uniquement
 
