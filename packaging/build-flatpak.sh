@@ -118,14 +118,23 @@ if ! flatpak remote-list --user --columns=name | awk '$1 == "flathub" { found=1 
   flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 fi
 
-echo "==> Runtime ${RUNTIME_ID}//${RUNTIME_VER}…"
-if ! flatpak install -y --user "flathub" "${RUNTIME_ID}//${RUNTIME_VER}" "org.gnome.Sdk//${RUNTIME_VER}"; then
-  echo "ERREUR : runtime ${RUNTIME_ID}//${RUNTIME_VER} indisponible."
-  exit 1
+if flatpak info --user "${RUNTIME_ID}//${RUNTIME_VER}" >/dev/null 2>&1 \
+  && flatpak info --user "org.gnome.Sdk//${RUNTIME_VER}" >/dev/null 2>&1; then
+  echo "==> Runtime ${RUNTIME_ID}//${RUNTIME_VER} déjà installé."
+else
+  echo "==> Runtime ${RUNTIME_ID}//${RUNTIME_VER}…"
+  if ! flatpak install -y --user "flathub" "${RUNTIME_ID}//${RUNTIME_VER}" "org.gnome.Sdk//${RUNTIME_VER}"; then
+    echo "ERREUR : runtime ${RUNTIME_ID}//${RUNTIME_VER} indisponible."
+    exit 1
+  fi
 fi
 
-echo "==> Extension Rust (Freedesktop ${RUNTIME_VER})…"
-flatpak install -y --user "flathub" "org.freedesktop.Sdk.Extension.rust-stable//25.08"
+if flatpak info --user "org.freedesktop.Sdk.Extension.rust-stable//25.08" >/dev/null 2>&1; then
+  echo "==> Extension Rust déjà installée."
+else
+  echo "==> Extension Rust (Freedesktop ${RUNTIME_VER})…"
+  flatpak install -y --user "flathub" "org.freedesktop.Sdk.Extension.rust-stable//25.08"
+fi
 
 echo "==> flatpak-builder (Rust + Tauri, plusieurs minutes)…"
 run_builder --user --force-clean --disable-rofiles-fuse --repo="${REPO}" "${BUILD_DIR}" "${MANIFEST}"
