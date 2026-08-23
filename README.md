@@ -5,15 +5,10 @@
 Lanceur **local-only** pour tes serveurs de dev en loopback.  
 **Gratuit** · **100 % local-first** · **Mr-Aurevo-X** · mises à jour **non garanties**
 
-**v0.1.0** — deux packs officiels, même app, même release :
-
-| | Windows | Linux |
-|---|---|---|
-| **Fichier** | [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) | [`org.mraurevox.LocalDock.flatpak`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak) |
-| **Contenu** | `localdock.exe` + `Lancer.cmd` | runtime GNOME 49, id `org.mraurevox.LocalDock` |
-| **Install** | Extraire → `Lancer.cmd` | `flatpak install --user` (voir plus bas) |
-
+[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
 [Toutes les releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
+
+**Linux :** passe par **[Hub Dev](https://github.com/Mr-Aurevo-X/Hub-Dev-Linux)** — pas par LocalDock.
 
 ## Aperçu
 
@@ -28,11 +23,9 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 - Local-first — **pas de télémétrie éditeur**, **pas de portail HTTP**
 - LocalDock n’écoute **aucun** port ; tes apps enfants sont orientées vers `127.0.0.1`
 - Seule connexion hors machine : vérif. version GitHub **si tu la laisses activée** dans À propos (lecture seule, pas de téléchargement)
-- Le registre (`apps.json`) est **propre à ce PC et à ce compte** — les chemins ne suivent pas une install ailleurs
+- Le registre (`apps.json`) est **propre à ce PC et à ce compte Windows** — les chemins ne suivent pas une install ailleurs
 
 ## Sur ton PC
-
-### Windows
 
 | Quoi | Où |
 |------|-----|
@@ -41,65 +34,13 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 | Historique | `%APPDATA%\LocalDock\history.json` |
 | Préférences | `%LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json` (partagé entre apps) |
 
-### Linux
-
-| Quoi | Où |
-|------|-----|
-| **App (Flatpak)** | `flatpak run org.mraurevox.LocalDock` |
-| Données Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/` (`apps.json`, `history.json`) |
-| Préférences Flatpak | `~/.var/app/org.mraurevox.LocalDock/config/Mr-Aurevo-X/user-settings.json` |
-| Données natives (sources) | `~/.config/LocalDock/` |
-| Préférences natives | `~/.config/Mr-Aurevo-X/user-settings.json` |
-
-Le Flatpak liste et lance les localhost **de l’hôte** (`ss` + `flatpak-spawn --host`), pas seulement le sandbox. Un Windows monté (`/run/media/…`) se scanne ; **Importer Windows** remap `C:\…`.
-
 ## Lancer
-
-### Windows
 
 1. Télécharge [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip)  
 2. Extrais où tu veux  
 3. Lance `Lancer.cmd` (ou `localdock.exe`)
 
 Windows peut afficher un avertissement : les binaires ne sont **pas signés**. C’est **SmartScreen**, pas un antivirus qui dit « virus ».
-
-### Linux
-
-1. [Flatpak](https://flatpak.org/setup/) + runtime **GNOME 49** :
-
-```bash
-flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user -y flathub org.gnome.Platform//49
-```
-
-2. Pack officiel :
-
-```bash
-curl -fL -o org.mraurevox.LocalDock.flatpak \
-  https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/org.mraurevox.LocalDock.flatpak
-flatpak install --user -y ./org.mraurevox.LocalDock.flatpak
-```
-
-3. Menu applications + raccourci Bureau (**sans** cloner le repo) :
-
-```bash
-mkdir -p ~/.local/share/applications
-SRC=~/.local/share/flatpak/exports/share/applications/org.mraurevox.LocalDock.desktop
-cp -f "$SRC" ~/.local/share/applications/
-. ~/.config/user-dirs.dirs 2>/dev/null || true
-DESK="${XDG_DESKTOP_DIR:-$HOME/Bureau}"
-[ -d "$DESK" ] || DESK="$HOME/Desktop"
-cp -f "$SRC" "$DESK/LocalDock.desktop"
-chmod +x ~/.local/share/applications/org.mraurevox.LocalDock.desktop "$DESK/LocalDock.desktop"
-```
-
-Depuis un clone : `bash packaging/installer-raccourci-flatpak.sh` (même logique Bureau / Desktop).
-
-4. `flatpak run org.mraurevox.LocalDock`
-
-Mint / Cinnamon : le message `Failed to load module "xapp-gtk3-module"` vient de l’hôte (Favorites Nemo). Le pack le coupe ; ce n’est pas un crash. Sur un pack déjà installé : `flatpak override --user --unset-env=GTK_MODULES --unset-env=GTK3_MODULES org.mraurevox.LocalDock`
-
-Sources (optionnel) : `bash LANCER.sh` · raccourci natif : `bash INSTALLER-RACCOURCI.sh` · rebuild Flatpak : `bash packaging/build-flatpak.sh`.
 
 ## Version officielle uniquement
 
