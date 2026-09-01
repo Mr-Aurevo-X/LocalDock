@@ -58,23 +58,6 @@ Software **as is**, without warranty — see `LICENSE` and `PRIVACY.md`.
 
 In-app About: terms, privacy, notices, licenses, local paths.
 
-## Build from source
-
-Stable Rust + WebView2 (Windows) or WebKitGTK (Linux). Linux is source-only on v0.1.0 (no official zip).
-
-```powershell
-cargo test -p localdock-core
-cargo build --release -p localdock
-.\Lancer.cmd
-```
-
-```powershell
-.\scripts\package-localdock-zip.ps1
-.\scripts\check-no-network-deps.ps1
-```
-
-Docs: `docs/SECURITY.md` · `RELEASES.md` · `ISOLATION.md` · `docs/QA-SMOKE.md`
-
 ## Support (optional)
 
 If you like the work, a coffee — otherwise just enjoy.
