@@ -8,6 +8,8 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 [Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
 [Toutes les releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
 
+**Linux :** passe par **[Hub Dev](https://github.com/Mr-Aurevo-X/Hub-Dev-Linux)** — pas par LocalDock.
+
 ## Aperçu
 
 - **Accueil** — nombre de ports ouverts, apps enregistrées à la main, racines de confiance + **Parcourir** / scan
@@ -34,9 +36,9 @@ Lanceur **local-only** pour tes serveurs de dev en loopback.
 
 ## Lancer
 
-1. Télécharge le zip sur la page Releases  
+1. Télécharge [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip)  
 2. Extrais où tu veux  
-3. Lance `Lancer.cmd`
+3. Lance `Lancer.cmd` (ou `localdock.exe`)
 
 Windows peut afficher un avertissement : les binaires ne sont **pas signés**. C’est **SmartScreen**, pas un antivirus qui dit « virus ».
 

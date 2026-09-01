@@ -2,15 +2,18 @@ mod github_latest;
 mod history;
 mod suite_settings;
 
+use localdock_core::host_exec;
 use localdock_core::path_guard::{assert_under_roots, display_path};
 use localdock_core::ports::{self, AppHint, PortRow};
 use localdock_core::registry::{AppEntry, Registry};
 use localdock_core::scanner::{scan_root, ProposedApp};
 use localdock_core::spawn::ProcessManager;
+use localdock_core::win_paths;
 use localdock_core::LocalDockError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+#[cfg(not(target_os = "linux"))]
 use std::process::Command;
 use std::sync::Mutex;
 use tauri::State;
@@ -64,6 +67,15 @@ struct ProposedAppView {
     preferred_port: Option<u16>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct ImportWindowsResult {
+    snapshot: RegistrySnapshot,
+    source: String,
+    roots_added: u32,
+    apps_added: u32,
+    skipped: u32,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 struct RegisterAppInput {
     name: String,
@@ -89,7 +101,7 @@ fn list_apps(state: State<'_, AppState>) -> CommandResult<RegistrySnapshot> {
 
 #[tauri::command]
 fn add_root(path: String, state: State<'_, AppState>) -> CommandResult<RegistrySnapshot> {
-    let root = std::fs::canonicalize(Path::new(&path)).map_err(|err| err.to_string())?;
+    let root = resolve_root_dir(&path)?;
     if !root.is_dir() {
         return Err("root must be an existing directory".to_string());
     }
@@ -114,6 +126,116 @@ fn add_root(path: String, state: State<'_, AppState>) -> CommandResult<RegistryS
         .lock()
         .map_err(|_| "process manager mutex poisoned".to_string())?;
     Ok(snapshot(&state.registry_path, &registry, &processes))
+}
+
+#[tauri::command]
+fn import_windows_locals(state: State<'_, AppState>) -> CommandResult<ImportWindowsResult> {
+    let sources = win_paths::find_windows_localdock_registries();
+    if sources.is_empty() {
+        return Err("aucun registre LocalDock Windows trouvé sur un disque monté".to_string());
+    }
+
+    let mut registry = state
+        .registry
+        .lock()
+        .map_err(|_| "registry mutex poisoned".to_string())?;
+
+    let mut roots_added = 0u32;
+    let mut apps_added = 0u32;
+    let mut skipped = 0u32;
+    let mut sources_used = Vec::new();
+
+    for source in sources {
+        let Ok(data) = std::fs::read_to_string(&source) else {
+            skipped += 1;
+            continue;
+        };
+        let Ok(win) = Registry::deserialize_unchecked(&data) else {
+            skipped += 1;
+            continue;
+        };
+        let Some(system_root) = win_paths::windows_root_from_roaming_registry(&source) else {
+            skipped += 1;
+            continue;
+        };
+
+        for root in &win.allowed_roots {
+            match remap_existing_dir(root, &system_root) {
+                Some(mapped) => {
+                    if !registry.allowed_roots.iter().any(|existing| existing == &mapped) {
+                        registry.allowed_roots.push(mapped);
+                        roots_added += 1;
+                    }
+                }
+                None => skipped += 1,
+            }
+        }
+
+        for mut app in win.apps {
+            let Some(mapped) = remap_existing_dir(&app.cwd, &system_root) else {
+                skipped += 1;
+                continue;
+            };
+            if registry
+                .apps
+                .iter()
+                .any(|existing| existing.id == app.id || existing.cwd == mapped)
+            {
+                skipped += 1;
+                continue;
+            }
+            if !registry
+                .allowed_roots
+                .iter()
+                .any(|root| mapped.starts_with(root))
+            {
+                registry.allowed_roots.push(mapped.clone());
+                roots_added += 1;
+            }
+            app.cwd = mapped;
+            match registry.add_app(app) {
+                Ok(()) => apps_added += 1,
+                Err(_) => skipped += 1,
+            }
+        }
+        sources_used.push(source.display().to_string());
+    }
+
+    persist_registry(&mut registry, &state.registry_path)?;
+    let source = sources_used.join("; ");
+    let _ = history::append(
+        &state.registry_path,
+        "import_win",
+        &format!("{source} roots={roots_added} apps={apps_added}"),
+    );
+    let processes = state
+        .processes
+        .lock()
+        .map_err(|_| "process manager mutex poisoned".to_string())?;
+    Ok(ImportWindowsResult {
+        snapshot: snapshot(&state.registry_path, &registry, &processes),
+        source,
+        roots_added,
+        apps_added,
+        skipped,
+    })
+}
+
+fn resolve_root_dir(path: &str) -> CommandResult<PathBuf> {
+    win_paths::resolve_existing_dir(path).map_err(|err| err.to_string())
+}
+
+fn remap_existing_dir(raw: &Path, system_root: &Path) -> Option<PathBuf> {
+    let text = raw.to_string_lossy();
+    let mapped = if raw.is_dir() {
+        raw.to_path_buf()
+    } else {
+        win_paths::remap_windows_path(&text, system_root)?
+    };
+    if !mapped.is_dir() {
+        return None;
+    }
+    std::fs::canonicalize(mapped).ok()
 }
 
 #[tauri::command]
@@ -224,6 +346,42 @@ fn stop_app(id: String, state: State<'_, AppState>) -> CommandResult<()> {
         }
         Err(err) => Err(err.to_string()),
     }
+}
+
+#[tauri::command]
+fn remove_app(id: String, state: State<'_, AppState>) -> CommandResult<RegistrySnapshot> {
+    let name = {
+        let registry = state
+            .registry
+            .lock()
+            .map_err(|_| "registry mutex poisoned".to_string())?;
+        registry
+            .get(&id)
+            .map(|app| app.name.clone())
+            .ok_or_else(|| format!("app not found: {id}"))?
+    };
+
+    {
+        let processes = state
+            .processes
+            .lock()
+            .map_err(|_| "process manager mutex poisoned".to_string())?;
+        let _ = processes.stop(&id);
+    }
+
+    let mut registry = state
+        .registry
+        .lock()
+        .map_err(|_| "registry mutex poisoned".to_string())?;
+    registry.remove_app(&id).map_err(|err| err.to_string())?;
+    persist_registry(&mut registry, &state.registry_path)?;
+    let _ = history::append(&state.registry_path, "unregister", &name);
+
+    let processes = state
+        .processes
+        .lock()
+        .map_err(|_| "process manager mutex poisoned".to_string())?;
+    Ok(snapshot(&state.registry_path, &registry, &processes))
 }
 
 #[tauri::command]
@@ -389,10 +547,69 @@ fn open_release(url: Option<String>) -> CommandResult<()> {
 
 #[tauri::command]
 fn pick_folder() -> CommandResult<Option<String>> {
-    let picked = rfd::FileDialog::new()
-        .set_title("LocalDock")
-        .pick_folder();
-    Ok(picked.map(|path| display_path(&path)))
+    #[cfg(windows)]
+    {
+        let picked = rfd::FileDialog::new()
+            .set_title("LocalDock")
+            .pick_folder();
+        return Ok(picked.map(|path| display_path(&path)));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return pick_folder_linux();
+    }
+
+    #[cfg(not(any(windows, target_os = "linux")))]
+    {
+        let picked = rfd::FileDialog::new()
+            .set_title("LocalDock")
+            .pick_folder();
+        Ok(picked.map(|path| display_path(&path)))
+    }
+}
+
+/// Sync XDG-portal dialogs (`rfd` + pollster) panic inside Tauri's runtime
+/// and kill the process. KDE/GNOME dialogs run as a host subprocess instead.
+#[cfg(target_os = "linux")]
+fn pick_folder_linux() -> CommandResult<Option<String>> {
+    let home = std::env::var("HOME").unwrap_or_else(|_| "/".into());
+    let attempts: [(&str, Vec<String>); 2] = [
+        (
+            "kdialog",
+            vec!["--getexistingdirectory".into(), home.clone()],
+        ),
+        (
+            "zenity",
+            vec![
+                "--file-selection".into(),
+                "--directory".into(),
+                "--title=LocalDock".into(),
+                format!("--filename={home}/"),
+            ],
+        ),
+    ];
+
+    for (bin, args) in attempts {
+        let output = match host_exec::host_command(bin, &args, None, &[]).output() {
+            Ok(output) => output,
+            Err(_) => continue,
+        };
+        if !output.status.success() {
+            return Ok(None);
+        }
+        return Ok(folder_path_from_dialog_stdout(&output.stdout));
+    }
+    Err("aucun sélecteur de dossier (installe kdialog ou zenity)".into())
+}
+
+fn folder_path_from_dialog_stdout(stdout: &[u8]) -> Option<String> {
+    let path = String::from_utf8_lossy(stdout).trim().to_string();
+    if path.is_empty() {
+        None
+    } else {
+        Some(path)
+    }
 }
 
 #[tauri::command]
@@ -572,8 +789,7 @@ fn open_url(url: &str) -> CommandResult<()> {
 
 #[cfg(target_os = "linux")]
 fn open_url(url: &str) -> CommandResult<()> {
-    let status = Command::new("xdg-open")
-        .arg(url)
+    let status = host_exec::host_command("xdg-open", &[url.to_string()], None, &[])
         .status()
         .map_err(|err| err.to_string())?;
     status_to_result(status, "open loopback URL")
@@ -606,9 +822,7 @@ fn terminate_pid(pid: u32) -> CommandResult<()> {
 
 #[cfg(not(windows))]
 fn terminate_pid(pid: u32) -> CommandResult<()> {
-    let pid_text = pid.to_string();
-    let status = Command::new("kill")
-        .args(["-TERM", pid_text.as_str()])
+    let status = host_exec::host_command("kill", &["-TERM".into(), pid.to_string()], None, &[])
         .status()
         .map_err(|err| err.to_string())?;
     status_to_result(status, "kill port process")
@@ -622,7 +836,13 @@ fn status_to_result(status: std::process::ExitStatus, action: &str) -> CommandRe
     }
 }
 
+fn strip_host_gtk_modules() {
+    std::env::remove_var("GTK_MODULES");
+    std::env::remove_var("GTK3_MODULES");
+}
+
 fn main() {
+    strip_host_gtk_modules();
     let registry_path = config_path().expect("resolve LocalDock registry path");
     let registry = load_or_create_registry(&registry_path).expect("load LocalDock registry");
 
@@ -635,8 +855,10 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             list_apps,
             add_root,
+            import_windows_locals,
             scan,
             register_app,
+            remove_app,
             start_app,
             stop_app,
             list_ports,
@@ -655,4 +877,37 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("run LocalDock Tauri application");
+}
+
+#[cfg(test)]
+mod gtk_modules_tests {
+    use super::strip_host_gtk_modules;
+
+    #[test]
+    fn strips_mint_xapp_gtk_modules() {
+        std::env::set_var("GTK_MODULES", "xapp-gtk3-module");
+        std::env::set_var("GTK3_MODULES", "xapp-gtk3-module");
+        strip_host_gtk_modules();
+        assert!(std::env::var_os("GTK_MODULES").is_none());
+        assert!(std::env::var_os("GTK3_MODULES").is_none());
+    }
+}
+
+#[cfg(test)]
+mod pick_folder_tests {
+    use super::folder_path_from_dialog_stdout;
+
+    #[test]
+    fn empty_stdout_is_none() {
+        assert_eq!(folder_path_from_dialog_stdout(b""), None);
+        assert_eq!(folder_path_from_dialog_stdout(b"  \n"), None);
+    }
+
+    #[test]
+    fn trims_folder_path() {
+        assert_eq!(
+            folder_path_from_dialog_stdout(b"/home/mraurevox/Documents\n"),
+            Some("/home/mraurevox/Documents".into())
+        );
+    }
 }

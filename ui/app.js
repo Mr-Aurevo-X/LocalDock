@@ -23,6 +23,7 @@ const els = {
   apps: document.querySelector("#apps"),
   btnAbout: document.querySelector("#btnAbout"),
   btnBrowseRoot: document.querySelector("#btnBrowseRoot"),
+  btnImportWin: document.querySelector("#btnImportWin"),
   btnCopyRepo: document.querySelector("#btnCopyRepo"),
   btnOpenRelease: document.querySelector("#btnOpenRelease"),
   btnUpdateLater: document.querySelector("#btnUpdateLater"),
@@ -267,6 +268,11 @@ function renderApps() {
       actions.append(open);
     }
 
+    const remove = tag("button", "danger", t("remove"));
+    remove.type = "button";
+    remove.addEventListener("click", () => removeApp(app));
+    actions.append(remove);
+
     card.append(actions);
     els.apps.append(card);
   }
@@ -290,9 +296,11 @@ function renderPorts() {
       ),
     );
     card.append(tag("div", "meta", `${port.addr}:${port.port}`));
-    const path = portPath(port);
-    if (path) {
-      card.append(tag("div", "meta", path));
+    if (port.cwd) {
+      card.append(tag("div", "meta", port.cwd));
+    }
+    if (port.image_path && port.image_path !== port.cwd) {
+      card.append(tag("div", "meta", port.image_path));
     }
     const command = portCommand(port);
     if (command) {
@@ -310,7 +318,7 @@ function renderPorts() {
       const actions = tag("div", "card-actions");
       const kill = tag("button", "danger", t("kill"));
       kill.type = "button";
-      kill.disabled = !port.pid;
+      kill.disabled = !port.pid || port.killable === false;
       kill.addEventListener("click", () => killPort(port));
       actions.append(kill);
       card.append(actions);
@@ -345,10 +353,6 @@ function portLabel(port) {
     }
   }
   return port.process_name || `${port.addr}:${port.port}`;
-}
-
-function portPath(port) {
-  return port.cwd || port.image_path || "";
 }
 
 function portCommand(port) {
@@ -528,11 +532,29 @@ async function addRoot(event) {
 }
 
 async function browseRoot() {
-  const path = await call("pick_folder");
-  if (!path) {
-    return;
+  try {
+    const path = await call("pick_folder");
+    if (!path) {
+      return;
+    }
+    els.rootPath.value = path;
+  } catch (_) {
+    /* call() already surfaced the error */
   }
-  els.rootPath.value = path;
+}
+
+async function importWindowsLocals() {
+  const result = await call("import_windows_locals");
+  state.registry = result.snapshot;
+  renderRegistry();
+  renderHomeKpis();
+  setMessage(
+    t("importedWin", {
+      roots: result.roots_added,
+      apps: result.apps_added,
+    }),
+    "ok",
+  );
 }
 
 async function scanRoot(root) {
@@ -563,6 +585,17 @@ async function stopApp(id) {
   await call("stop_app", { id });
   await Promise.all([loadApps(), loadPorts()]);
   setMessage(t("appStopped"), "ok");
+}
+
+async function removeApp(app) {
+  const confirmed = await askConfirm(t("confirmRemove", { name: app.name }));
+  if (!confirmed) {
+    return;
+  }
+  state.registry = await call("remove_app", { id: app.id });
+  renderRegistry();
+  renderHomeKpis();
+  setMessage(t("appRemoved", { name: app.name }), "ok");
 }
 
 async function killPort(port) {
@@ -672,6 +705,9 @@ function wireUi() {
     }
   });
   els.btnBrowseRoot?.addEventListener("click", browseRoot);
+  els.btnImportWin?.addEventListener("click", () => {
+    importWindowsLocals().catch(() => {});
+  });
   els.refreshHistory?.addEventListener("click", () => {
     loadHistory().catch(() => {});
   });

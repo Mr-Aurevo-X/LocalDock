@@ -8,6 +8,8 @@
 [Download LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
 [All releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
 
+**Linux:** use **[Hub Dev](https://github.com/Mr-Aurevo-X/Hub-Dev-Linux)** — not LocalDock.
+
 ## Overview
 
 - **Home** — open-port count, manually registered apps, trusted roots + **Browse** / scan
@@ -34,9 +36,9 @@
 
 ## Launch
 
-1. Download the zip from the Releases page  
+1. Download [`LocalDock.zip`](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip)  
 2. Extract anywhere  
-3. Run `Lancer.cmd`
+3. Run `Lancer.cmd` (or `localdock.exe`)
 
 Windows may show a warning: binaries are **not signed**. That is **SmartScreen**, not an antivirus “virus” verdict.
 
@@ -57,6 +59,23 @@ Software **as is**, without warranty — see `LICENSE` and `PRIVACY.md`.
 - **Copyright © 2026 Mr-Aurevo-X**
 
 In-app About: terms, privacy, notices, licenses, local paths.
+
+## Build from source
+
+Stable Rust + WebView2 (Windows).
+
+```powershell
+cargo test -p localdock-core
+cargo build --release -p localdock
+.\Lancer.cmd
+```
+
+```powershell
+.\scripts\package-localdock-zip.ps1
+.\scripts\check-no-network-deps.ps1
+```
+
+Docs: `docs/SECURITY.md` · `RELEASES.md` · `ISOLATION.md` · `docs/QA-SMOKE.md`
 
 ## Support (optional)
 

@@ -19,4 +19,4 @@ uuid = { version = "1", features = ["v4"] }
 rfd = { version = "0.15", default-features = false }
 
 [target.'cfg(not(windows))'.dependencies]
-rfd = { version = "0.15", default-features = false, features = ["xdg-portal"] }
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }

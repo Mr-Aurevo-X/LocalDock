@@ -8,7 +8,7 @@ Mr-Aurevo-X does not collect personal data on its servers. No analytics tracker,
 Because the publisher does not gather or transmit personal data to any Mr-Aurevo-X server, GDPR rights that assume a publisher-side filing do not apply. You may uninstall and delete local settings anytime.
 
 2. Local-first architecture
-Local execution (Rust / Tauri + WebView). Registry: %APPDATA%\LocalDock\apps.json (Windows) or ~/.config/LocalDock/apps.json (Linux). Shared preferences: %LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json.
+Local execution (Rust / Tauri + WebView). Windows registry: %APPDATA%\LocalDock\apps.json. Linux native: ~/.config/LocalDock/. Flatpak: ~/.var/app/org.mraurevox.LocalDock/config/LocalDock/. Prefs: %LOCALAPPDATA%\Mr-Aurevo-X\user-settings.json (Windows), ~/.config/Mr-Aurevo-X/ (native) or ~/.var/app/org.mraurevox.LocalDock/config/Mr-Aurevo-X/ (Flatpak).
 
 LocalDock itself opens no listen port and has no HTTP portal. Child processes you start may use the network for their own needs.
 

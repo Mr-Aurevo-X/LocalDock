@@ -1,6 +1,6 @@
+use localdock_core::host_exec;
 use localdock_core::version::{is_remote_newer, normalize_version};
 use serde::{Deserialize, Serialize};
-use std::process::Command;
 
 const PRODUCT_REPO: &str = "Mr-Aurevo-X/LocalDock";
 const LATEST_API: &str = "https://api.github.com/repos/Mr-Aurevo-X/LocalDock/releases/latest";
@@ -95,17 +95,21 @@ fn no_remote_release(local: String) -> LatestCheck {
 }
 
 fn fetch_latest_json() -> Result<String, String> {
-    let mut cmd = Command::new(curl_bin());
-    cmd.args([
-        "-sS",
-        "--max-time",
-        "8",
-        "-H",
-        "Accept: application/vnd.github+json",
-        "-H",
-        "User-Agent: LocalDock-ReleaseNotice",
-        LATEST_API,
-    ]);
+    let mut cmd = host_exec::host_command(
+        curl_bin(),
+        &[
+            "-sS".into(),
+            "--max-time".into(),
+            "8".into(),
+            "-H".into(),
+            "Accept: application/vnd.github+json".into(),
+            "-H".into(),
+            "User-Agent: LocalDock-ReleaseNotice".into(),
+            LATEST_API.into(),
+        ],
+        None,
+        &[],
+    );
 
     #[cfg(windows)]
     {

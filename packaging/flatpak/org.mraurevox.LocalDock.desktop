@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=LocalDock
+Comment=Lanceur local-only pour tes serveurs de dev en loopback (127.0.0.1)
+Comment[en]=Local-only launcher for loopback dev servers (127.0.0.1)
+Exec=localdock
+Icon=org.mraurevox.LocalDock
+Terminal=false
+Categories=Development;
+StartupNotify=true
+StartupWMClass=LocalDock

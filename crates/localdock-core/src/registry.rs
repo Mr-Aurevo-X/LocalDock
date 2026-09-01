@@ -76,6 +76,11 @@ impl Registry {
         Ok(registry)
     }
 
+    /// Deserialize without requiring paths to exist (Windows registry on Linux).
+    pub fn deserialize_unchecked(data: &str) -> Result<Self, LocalDockError> {
+        Ok(serde_json::from_str(data)?)
+    }
+
     pub fn save(&mut self, path: &Path) -> Result<(), LocalDockError> {
         self.version = REGISTRY_VERSION;
         let data = serde_json::to_string_pretty(self)?;

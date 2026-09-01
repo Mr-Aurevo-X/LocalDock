@@ -22,6 +22,108 @@ pub struct PortRow {
     pub app_name: String,
     #[serde(default)]
     pub started_unix: Option<i64>,
+    #[serde(default = "default_killable")]
+    pub killable: bool,
+}
+
+fn default_killable() -> bool {
+    true
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WellKnownListener {
+    pub name: &'static str,
+    pub image_path: &'static str,
+    pub pidof: &'static str,
+    pub fill_pid: bool,
+    pub killable: bool,
+}
+
+pub fn well_known_listener(addr: IpAddr, port: u16) -> Option<WellKnownListener> {
+    match port {
+        53 if is_resolved_stub(addr) => Some(WellKnownListener {
+            name: "systemd-resolved",
+            image_path: "/usr/lib/systemd/systemd-resolved",
+            pidof: "systemd-resolved",
+            fill_pid: true,
+            killable: false,
+        }),
+        631 => Some(WellKnownListener {
+            name: "cupsd",
+            image_path: "/usr/sbin/cupsd",
+            pidof: "cupsd",
+            fill_pid: true,
+            killable: false,
+        }),
+        6379 => Some(WellKnownListener {
+            name: "redis-server",
+            image_path: "/usr/bin/redis-server",
+            pidof: "redis-server",
+            fill_pid: true,
+            killable: true,
+        }),
+        5432 | 5433 => Some(WellKnownListener {
+            name: "postgres",
+            image_path: "/usr/bin/postgres",
+            pidof: "postgres",
+            fill_pid: true,
+            killable: true,
+        }),
+        3306 => Some(WellKnownListener {
+            name: "mysqld",
+            image_path: "/usr/sbin/mysqld",
+            pidof: "mysqld",
+            fill_pid: true,
+            killable: true,
+        }),
+        11434 => Some(WellKnownListener {
+            name: "ollama",
+            image_path: "/usr/bin/ollama",
+            pidof: "ollama",
+            fill_pid: true,
+            killable: true,
+        }),
+        27017 => Some(WellKnownListener {
+            name: "mongod",
+            image_path: "/usr/bin/mongod",
+            pidof: "mongod",
+            fill_pid: true,
+            killable: true,
+        }),
+        _ => None,
+    }
+}
+
+fn is_resolved_stub(addr: IpAddr) -> bool {
+    match addr {
+        IpAddr::V4(ip) => {
+            let octets = ip.octets();
+            octets == [127, 0, 0, 53] || octets == [127, 0, 0, 54]
+        }
+        IpAddr::V6(_) => false,
+    }
+}
+
+fn parse_host_proc_details(text: &str) -> (ProcessDetails, Option<u64>, Option<u64>) {
+    let mut details = ProcessDetails::default();
+    let mut btime = None;
+    let mut start_tick = None;
+    for line in text.lines() {
+        if let Some(value) = line.strip_prefix("NAME=") {
+            details.name = value.trim().to_string();
+        } else if let Some(value) = line.strip_prefix("EXE=") {
+            details.image_path = value.trim().to_string();
+        } else if let Some(value) = line.strip_prefix("CWD=") {
+            details.cwd = value.trim().to_string();
+        } else if let Some(value) = line.strip_prefix("CMD=") {
+            details.command_line = value.trim().to_string();
+        } else if let Some(value) = line.strip_prefix("BTIME=") {
+            btime = value.trim().parse().ok();
+        } else if let Some(value) = line.strip_prefix("STARTTICK=") {
+            start_tick = value.trim().parse().ok();
+        }
+    }
+    (details, btime, start_tick)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,6 +171,61 @@ pub fn attach_app_labels(rows: &mut [PortRow], apps: &[AppHint]) {
     }
 }
 
+pub fn parse_ss_local_address(addr: &str) -> Option<(IpAddr, u16)> {
+    let addr = addr.trim();
+    if let Some(rest) = addr.strip_prefix('[') {
+        let (ip_raw, port) = rest.rsplit_once("]:")?;
+        let ip_raw = ip_raw.split('%').next()?;
+        let port = port.parse().ok()?;
+        let ip = ip_raw.parse().ok()?;
+        return Some((ip, port));
+    }
+
+    let (ip_raw, port) = addr.rsplit_once(':')?;
+    let port = port.parse().ok()?;
+    if ip_raw == "*" {
+        return Some((IpAddr::V4(Ipv4Addr::UNSPECIFIED), port));
+    }
+    let ip_raw = ip_raw.split('%').next()?;
+    let ip = ip_raw.parse().ok()?;
+    Some((ip, port))
+}
+
+pub fn parse_ss_users(line: &str) -> (u32, String) {
+    let Some(users) = line.split("users:((").nth(1) else {
+        return (0, String::new());
+    };
+    let name = users
+        .strip_prefix('"')
+        .and_then(|rest| rest.split_once('"'))
+        .map(|(name, _)| name.to_string())
+        .unwrap_or_default();
+    let pid = users
+        .split("pid=")
+        .nth(1)
+        .and_then(|rest| rest.split(|ch: char| !ch.is_ascii_digit()).next())
+        .and_then(|pid| pid.parse().ok())
+        .unwrap_or(0);
+    (pid, name)
+}
+
+pub fn parse_ss_listen_line(line: &str) -> Option<(IpAddr, u16, u32, String)> {
+    let fields: Vec<&str> = line.split_whitespace().collect();
+    if fields.len() < 4 {
+        return None;
+    }
+    let local = if fields[0] == "LISTEN" {
+        fields[3]
+    } else if fields.len() >= 5 && fields[1] == "LISTEN" {
+        fields[4]
+    } else {
+        return None;
+    };
+    let (addr, port) = parse_ss_local_address(local)?;
+    let (pid, name) = parse_ss_users(line);
+    Some((addr, port, pid, name))
+}
+
 fn path_mentioned(row: &PortRow, cwd: &std::path::Path) -> bool {
     let needle = display_path(cwd);
     if needle.is_empty() {
@@ -92,6 +249,7 @@ fn make_row(port: u16, pid: u32, details: ProcessDetails, addr: IpAddr) -> PortR
         cwd: details.cwd,
         app_name: String::new(),
         started_unix: details.started_unix,
+        killable: true,
     }
 }
 
@@ -105,6 +263,45 @@ mod platform {
     const TCP_LISTEN_STATE: &str = "0A";
 
     pub fn list_listeners(loopback_only: bool) -> Result<Vec<PortRow>, LocalDockError> {
+        match list_listeners_ss(loopback_only) {
+            Ok(rows) => Ok(rows),
+            Err(_) => list_listeners_proc(loopback_only),
+        }
+    }
+
+    fn list_listeners_ss(loopback_only: bool) -> Result<Vec<PortRow>, LocalDockError> {
+        let output = crate::host_exec::host_command(
+            "ss",
+            &[
+                "-H".into(),
+                "-l".into(),
+                "-t".into(),
+                "-n".into(),
+                "-p".into(),
+            ],
+            None,
+            &[],
+        )
+        .output()?;
+        if !output.status.success() {
+            return Err(std::io::Error::other("ss failed").into());
+        }
+
+        let mut rows = Vec::new();
+        for line in String::from_utf8_lossy(&output.stdout).lines() {
+            let Some((addr, port, pid, name)) = parse_ss_listen_line(line) else {
+                continue;
+            };
+            if loopback_only && !addr.is_loopback() {
+                continue;
+            }
+            rows.push(enrich_linux_row(addr, port, pid, name));
+        }
+        rows.sort_by_key(|row| (row.port, row.addr.clone(), row.pid));
+        Ok(rows)
+    }
+
+    fn list_listeners_proc(loopback_only: bool) -> Result<Vec<PortRow>, LocalDockError> {
         let inode_owners = inode_owners();
         let mut rows = Vec::new();
         read_tcp_file(
@@ -151,7 +348,9 @@ mod platform {
                 .get(&inode)
                 .cloned()
                 .unwrap_or((0, ProcessDetails::default()));
-            rows.push(make_row(port, pid, details, addr));
+            let mut row = make_row(port, pid, details, addr);
+            apply_well_known(&mut row, addr, port, String::new());
+            rows.push(row);
         }
 
         Ok(())
@@ -234,7 +433,96 @@ mod platform {
         inode.parse().ok()
     }
 
+    fn enrich_linux_row(addr: IpAddr, port: u16, pid: u32, ss_name: String) -> PortRow {
+        let hint = well_known_listener(addr, port);
+        let mut pid = pid;
+        if pid == 0 {
+            if let Some(known) = hint {
+                if known.fill_pid {
+                    pid = host_pidof(known.pidof).unwrap_or(0);
+                }
+            }
+        }
+        let mut details = process_details(pid);
+        if details.name.is_empty() {
+            details.name = ss_name;
+        }
+        let mut row = make_row(port, pid, details, addr);
+        apply_well_known(&mut row, addr, port, String::new());
+        row
+    }
+
+    fn apply_well_known(row: &mut PortRow, addr: IpAddr, port: u16, ss_name: String) {
+        let Some(hint) = well_known_listener(addr, port) else {
+            return;
+        };
+        if row.process_name.is_empty() {
+            row.process_name = if ss_name.is_empty() {
+                hint.name.to_string()
+            } else {
+                ss_name
+            };
+        } else if hint.name.starts_with(&row.process_name)
+            || row.process_name.starts_with(hint.name)
+        {
+            row.process_name = hint.name.to_string();
+        }
+        if row.image_path.is_empty() {
+            row.image_path = hint.image_path.to_string();
+        }
+        row.killable = hint.killable;
+    }
+
+    fn host_pidof(name: &str) -> Option<u32> {
+        let output = crate::host_exec::host_command("pidof", &[name.to_string()], None, &[])
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        String::from_utf8_lossy(&output.stdout)
+            .split_whitespace()
+            .next()
+            .and_then(|pid| pid.parse().ok())
+    }
+
     fn process_details(pid: u32) -> ProcessDetails {
+        if pid == 0 {
+            return ProcessDetails::default();
+        }
+        if crate::host_exec::running_in_flatpak() {
+            return host_process_details(pid);
+        }
+        read_local_proc_details(pid)
+    }
+
+    fn host_process_details(pid: u32) -> ProcessDetails {
+        let script = format!(
+            "pid={pid}; \
+             printf 'NAME='; cat /proc/$pid/comm 2>/dev/null | tr -d '\\n'; printf '\\n'; \
+             printf 'EXE='; readlink /proc/$pid/exe 2>/dev/null; printf '\\n'; \
+             printf 'CWD='; readlink /proc/$pid/cwd 2>/dev/null; printf '\\n'; \
+             printf 'CMD='; if [ -r /proc/$pid/cmdline ]; then tr '\\0' ' ' < /proc/$pid/cmdline; fi; printf '\\n'; \
+             printf 'BTIME='; awk '/^btime /{{print $2}}' /proc/stat 2>/dev/null; \
+             printf 'STARTTICK='; if [ -r /proc/$pid/stat ]; then awk -F') ' '{{print $2}}' /proc/$pid/stat | awk '{{print $20}}'; fi; printf '\\n'"
+        );
+        let Ok(output) =
+            crate::host_exec::host_command("sh", &["-c".into(), script], None, &[]).output()
+        else {
+            return ProcessDetails::default();
+        };
+        if !output.status.success() {
+            return ProcessDetails::default();
+        }
+        let (mut details, btime, start_tick) =
+            parse_host_proc_details(&String::from_utf8_lossy(&output.stdout));
+        if let (Some(btime), Some(start_tick)) = (btime, start_tick) {
+            details.started_unix = Some((btime + start_tick / 100) as i64);
+        }
+        details
+    }
+
+    fn read_local_proc_details(pid: u32) -> ProcessDetails {
         let image_path = fs::read_link(format!("/proc/{pid}/exe"))
             .map(|path| path.display().to_string())
             .unwrap_or_default();
@@ -575,5 +863,23 @@ mod platform {
 
     pub fn list_listeners(_loopback_only: bool) -> Result<Vec<PortRow>, LocalDockError> {
         Ok(Vec::new())
+    }
+}
+
+#[cfg(test)]
+mod host_details_tests {
+    use super::*;
+
+    #[test]
+    fn parses_host_proc_kv() {
+        let (details, btime, tick) = parse_host_proc_details(
+            "NAME=electron\nEXE=/usr/share/cursor/cursor\nCWD=/home/x\nCMD=cursor --no-sandbox\nBTIME=10\nSTARTTICK=200\n",
+        );
+        assert_eq!(details.name, "electron");
+        assert_eq!(details.image_path, "/usr/share/cursor/cursor");
+        assert_eq!(details.cwd, "/home/x");
+        assert_eq!(details.command_line, "cursor --no-sandbox");
+        assert_eq!(btime, Some(10));
+        assert_eq!(tick, Some(200));
     }
 }

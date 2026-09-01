@@ -79,6 +79,33 @@ fn process_manager_tracks_and_stops_app() {
 }
 
 #[test]
+fn start_falls_back_from_pnpm_run_to_node_script() {
+    let cwd = temp_test_dir("ld-spawn-pnpm-fallback");
+    std::fs::write(
+        cwd.join("package.json"),
+        r#"{"scripts":{"hold":"node hold.mjs"}}"#,
+    )
+    .unwrap();
+    std::fs::write(cwd.join("hold.mjs"), "setInterval(() => {}, 1000);\n").unwrap();
+    let app_id = Uuid::new_v4().to_string();
+    let app = AppEntry {
+        id: app_id.clone(),
+        name: "hold".into(),
+        cwd: cwd.clone(),
+        command: "pnpm".into(),
+        args: vec!["run".into(), "hold".into()],
+        preferred_port: None,
+        force_loopback: false,
+        enabled: true,
+    };
+    let manager = ProcessManager::default();
+    manager.start(&app).unwrap();
+    assert!(manager.is_running(&app_id));
+    manager.stop(&app_id).unwrap();
+    cleanup_dir(&cwd);
+}
+
+#[test]
 fn process_manager_rejects_duplicate_running_app() {
     let cwd = temp_test_dir("ld-spawn-duplicate");
     let (command, args) = sleeper_command();

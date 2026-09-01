@@ -2,11 +2,16 @@
 
 Manual smoke pass before release or after changes to spawn, registry, ports, or Tauri IPC.
 
-**v0.1.0 ship:** Windows zip on `Mr-Aurevo-X/LocalDock`. Linux is **source-build** (no official Linux asset on this tag). That is an explicit waiver of the old “both OS binaries” bar.
+**v0.1.0 ship:** same tag, two official assets on `Mr-Aurevo-X/LocalDock`:
 
-Prerequisites: Rust stable, WebView2 (Windows). See [`README.md`](../README.md).
+- `LocalDock.zip` (Windows)
+- `org.mraurevox.LocalDock.flatpak` (Linux, GNOME 49)
 
-## Windows (required for this tag)
+Both download URLs must return **200** (follow redirects).
+
+Prerequisites: Rust stable + WebView2 (Windows). Linux consumer: Flatpak + `org.gnome.Platform//49`. See [`README.md`](../README.md).
+
+## Windows (zip)
 
 - [ ] **Build** — `.\scripts\package-localdock-zip.ps1` (or `cargo build --release -p localdock`) completes.
 - [ ] **Accueil** — Parcourir + Ajouter a trusted root; scan; register one app; KPIs show port / app / root counts.
@@ -20,9 +25,16 @@ Prerequisites: Rust stable, WebView2 (Windows). See [`README.md`](../README.md).
   netstat -ano | findstr LISTENING | findstr /V "127.0.0.1"
   ```
 
-## Linux (source-only on v0.1.0)
+## Linux (Flatpak)
 
-Optional: `cargo test -p localdock-core` and `cargo build -p localdock` on a machine with WebKitGTK. Not a blocker for the Windows GitHub Release.
+- [ ] **Runtime** — `flatpak install --user -y flathub org.gnome.Platform//49`
+- [ ] **Install** — `flatpak install --user -y ./org.mraurevox.LocalDock.flatpak` from the GitHub asset (no clone).
+- [ ] **Shortcut** — copy the exported `.desktop` into `~/.local/share/applications/` and onto `$XDG_DESKTOP_DIR` / `~/Bureau` / `~/Desktop` (or `bash packaging/installer-raccourci-flatpak.sh` from a clone).
+- [ ] **Run** — `flatpak run org.mraurevox.LocalDock` opens Accueil.
+- [ ] **Host ports** — Ports list shows host listeners (`ss` via `flatpak-spawn --host`), not an empty sandbox.
+- [ ] **Registry** — data under `~/.var/app/org.mraurevox.LocalDock/config/LocalDock/`.
+
+Optional native: `bash LANCER.sh` (WebKitGTK). Not required if the Flatpak asset is published.
 
 ## Gates
 
@@ -31,4 +43,4 @@ Optional: `cargo test -p localdock-core` and `cargo build -p localdock` on a mac
 
 ## Pass criteria
 
-All Windows boxes + gates. Linux binary is out of scope for v0.1.0.
+Windows zip boxes **or** Linux Flatpak boxes (the OS you ship this pass for) + gates. Both official assets must exist on the tag.
