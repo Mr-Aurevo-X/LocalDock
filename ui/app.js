@@ -117,6 +117,30 @@ function askConfirm(body) {
   });
 }
 
+function renderCryptoWallets() {
+  const root = document.getElementById("cryptoWallets");
+  const wallets = window.CRYPTO_WALLETS;
+  if (!root || !Array.isArray(wallets)) return;
+  root.replaceChildren();
+  for (const wallet of wallets) {
+    const row = document.createElement("div");
+    row.className = "hub-crypto-row";
+    const label = document.createElement("span");
+    label.className = "hub-crypto-label";
+    label.textContent = `${wallet.symbol} — ${wallet.name}`;
+    label.title = wallet.address;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hub-support-btn hub-crypto-copy";
+    btn.textContent = t("cryptoCopy");
+    btn.addEventListener("click", () => {
+      copyText(wallet.address).catch(() => {});
+    });
+    row.append(label, btn);
+    root.append(row);
+  }
+}
+
 async function copyText(value, hintEl) {
   try {
     await navigator.clipboard.writeText(value);
@@ -622,6 +646,7 @@ async function openSupport(kind) {
 async function applyLanguage(lang, persist) {
   applyDom(lang);
   syncAboutHints();
+  renderCryptoWallets();
   renderRegistry();
   renderPorts();
   renderProposals();
@@ -733,6 +758,7 @@ async function init() {
     }
     applyDom(state.settings.language || "fr");
     syncAboutHints();
+    renderCryptoWallets();
     await Promise.all([loadApps(), loadPorts(), loadHistory()]);
     await checkUpdates();
   } catch {

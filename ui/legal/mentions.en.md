@@ -12,4 +12,4 @@ Release hosting: GitHub (Microsoft)
 
 Software is free for non-commercial use (`LICENSE`), with no automatic updater and no commitment to future versions.
 
-Optional support (a click leaves the app): Discord, PayPal, Revolut.
+Optional support (a click leaves the app): Discord, crypto (in-app).

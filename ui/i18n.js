@@ -34,6 +34,7 @@ const DICT = {
       "100 % local-first. Seule connexion hors machine : vérif. version GitHub (si activée dans À propos).",
     supportAria: "Soutien optionnel",
     supportNote: "Si le boulot te plaît, un café — sinon profite.",
+    cryptoCopy: "Copier",
     aboutBtn: "À propos",
     aboutTitle: "À propos — LocalDock",
     aboutIntro:
@@ -156,6 +157,7 @@ const DICT = {
       "100% local-first. Only off-machine call: GitHub version check (if enabled in About).",
     supportAria: "Optional support",
     supportNote: "If you like the work, a coffee — otherwise just use it.",
+    cryptoCopy: "Copy",
     aboutBtn: "About",
     aboutTitle: "About — LocalDock",
     aboutIntro:

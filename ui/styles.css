@@ -380,6 +380,32 @@ h2 {
   box-shadow: var(--glow-red);
 }
 
+.hub-crypto-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  max-height: 9rem;
+  overflow: auto;
+}
+
+.hub-crypto-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.hub-crypto-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
 .update-banner {
   display: flex;
   flex-wrap: wrap;

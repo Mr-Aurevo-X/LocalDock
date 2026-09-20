@@ -39,7 +39,7 @@ Child dev server (prefer 127.0.0.1 bind)
 - **CSP:** `default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'` in `tauri.conf.json`.
 - **No updater plugin**, no HTTP/MCP portal, no remote URL configuration.
 - **`open_loopback`:** accepts only `http://127.0.0.1:<port>` or `http://localhost:<port>` before delegating to the OS opener.
-- **`open_support`:** allowlisted Discord / PayPal / Revolut / GitHub org only (voluntary; not telemetry).
+- **`open_support`:** allowlisted Discord / crypto (in-app) / GitHub org only (voluntary; not telemetry).
 - **`check_github_latest` / `open_release`:** optional read-only GitHub Latest for `Mr-Aurevo-X/LocalDock`. No download, no install. Honors `checkGithubUpdates` in shared Mr-Aurevo-X settings.
 
 ## Dependency policy
@@ -81,7 +81,7 @@ rg -n "https?://" crates src-tauri/src ui --glob '!docs/**'
 Permitted matches:
 
 - Loopback open URL builders: `http://127.0.0.1:…` and `http://localhost:…`
-- Allowlisted support / legal contact URLs only (Discord, PayPal, Revolut, GitHub org / LocalDock repo) used by `open_support`, `open_release`, and `ui/legal/*.md`
+- Allowlisted support / legal contact URLs only (Discord, crypto (in-app), GitHub org / LocalDock repo) used by `open_support`, `open_release`, and `ui/legal/*.md`
 - Optional GitHub Latest API: `https://api.github.com/repos/Mr-Aurevo-X/LocalDock/releases/latest`
 - No other remote `http://` or `https://` literals in application source
 

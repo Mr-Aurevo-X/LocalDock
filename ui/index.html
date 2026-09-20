@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="vendor/pc-command-kit/components/hub-about.css" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="i18n.js"></script>
+    <script defer src="crypto-wallets.js"></script>
     <script defer src="chrome.js"></script>
     <script defer src="app.js"></script>
   </head>
@@ -146,9 +147,8 @@
           <p class="hub-support-note" data-i18n="supportNote">Si le boulot te plaît, un café — sinon profite.</p>
           <div class="hub-support-links">
             <button type="button" class="hub-support-btn" data-support="discord" title="Discord">Discord</button>
-            <button type="button" class="hub-support-btn" data-support="paypal" title="PayPal">PayPal</button>
-            <button type="button" class="hub-support-btn" data-support="revolut" title="Revolut">Revolut</button>
           </div>
+          <div class="hub-crypto-list" id="cryptoWallets" aria-label="Crypto donations"></div>
         </div>
         <button type="button" class="about-btn" id="btnAbout" data-i18n="aboutBtn">À propos</button>
         <p class="copyright" data-i18n="aboutCopyright">Copyright © 2026 Mr-Aurevo-X — tous droits réservés</p>

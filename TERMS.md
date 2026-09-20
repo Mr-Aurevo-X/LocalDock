@@ -30,7 +30,7 @@ LocalDock steers child servers toward `127.0.0.1` when `force_loopback` is on, b
 
 ## 5. Optional support
 
-Discord, PayPal, and Revolut links are **voluntary**. Donations are not a license fee and do not buy support or updates. Clicking those links leaves the local app.
+Discord and in-app crypto addresses are **voluntary**. Donations are not a license fee and do not buy support or updates.
 
 ## 6. Closed inner-source
 

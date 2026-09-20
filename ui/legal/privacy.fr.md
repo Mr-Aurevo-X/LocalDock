@@ -14,11 +14,11 @@ LocalDock n’ouvre pas de port d’écoute et n’a pas de portail HTTP. Les pr
 
 3. Exceptions réseau (pas de télémétrie éditeur)
 - Vérif. optionnelle GitHub Latest (toggle dans À propos) — lecture seule, pas de téléchargement.
-- Boutons Discord / PayPal / Revolut : sites de ces opérateurs.
+- Boutons Discord / crypto (in-app) : sites de ces opérateurs.
 - Ouverture d’un serveur enfant en loopback dans le navigateur, sur action utilisateur.
 
 4. Liens de soutien
-Un clic Discord / PayPal / Revolut quitte l’app. Politiques de confidentialité de ces services.
+Un clic Discord / crypto (in-app) quitte l’app. Politiques de confidentialité de ces services.
 
 5. Contact
 GitHub : https://github.com/Mr-Aurevo-X/LocalDock

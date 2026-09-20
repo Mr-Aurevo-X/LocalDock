@@ -14,11 +14,11 @@ LocalDock itself opens no listen port and has no HTTP portal. Child processes yo
 
 3. Network exceptions (not publisher telemetry)
 - Optional GitHub Latest check (toggle in About) — read-only, no download.
-- Discord / PayPal / Revolut buttons: those operators’ sites.
+- Discord / crypto (in-app) buttons: those operators’ sites.
 - Opening a child loopback server in the browser, on user action.
 
 4. Support links
-Opening Discord / PayPal / Revolut leaves the app. Those services’ privacy policies apply.
+Opening Discord / crypto (in-app) leaves the app. Those services’ privacy policies apply.
 
 5. Contact
 GitHub: https://github.com/Mr-Aurevo-X/LocalDock

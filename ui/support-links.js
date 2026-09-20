@@ -10,8 +10,6 @@
 
   const SUPPORT_LINKS = {
     discord: "https://discord.com/users/406891052516114442",
-    paypal: "https://www.paypal.com/paypalme/aurevo1",
-    revolut: "https://revolut.me/mr_aurevo_x",
   };
 
   global.MrAurevoXSupport = {
