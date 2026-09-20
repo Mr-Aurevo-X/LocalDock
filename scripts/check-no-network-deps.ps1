@@ -95,9 +95,7 @@ $AllowPatterns = @(
     'http://localhost',
     'https://github\.com/Mr-Aurevo-X',
     'https://api\.github\.com/repos/Mr-Aurevo-X/LocalDock',
-    'https://discord\.com/users/406891052516114442',
-    'https://www\.paypal\.com/paypalme/aurevo1',
-    'https://revolut\.me/mr_aurevo_x'
+    'https://discord\.com/users/406891052516114442'
 )
 
 $rg = Get-Command rg -ErrorAction SilentlyContinue
