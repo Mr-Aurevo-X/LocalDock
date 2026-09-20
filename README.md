@@ -66,6 +66,9 @@ Si le boulot te plaît, un café — sinon profite.
 
 [![Discord](https://img.shields.io/badge/Discord-Mr--Aurevo--X-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=050807)](https://discord.com/users/406891052516114442)
 
+Dons crypto : [liste complète sur le profil GitHub](https://github.com/Mr-Aurevo-X#user-content-support).  
+Crypto donations: [full list on GitHub profile](https://github.com/Mr-Aurevo-X#user-content-support).
+
 ---
 
 Rêvée par **Mr-Aurevo-X**. Cursor a réalisé le rêve.
