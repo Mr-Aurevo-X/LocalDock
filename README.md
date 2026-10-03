@@ -5,7 +5,7 @@
 Lanceur **local-only** pour tes serveurs de dev en loopback.  
 **Gratuit** · **100 % local-first** · **Mr-Aurevo-X** · mises à jour **non garanties**
 
-[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.0**  
+[Télécharger LocalDock.zip](https://github.com/Mr-Aurevo-X/LocalDock/releases/latest/download/LocalDock.zip) — Windows, `localdock.exe` + `Lancer.cmd` · **v0.1.2**  
 [Toutes les releases](https://github.com/Mr-Aurevo-X/LocalDock/releases)
 
 **Linux :** passe par **[Hub Dev](https://github.com/Mr-Aurevo-X/Hub-Dev-Linux)** — pas par LocalDock.
