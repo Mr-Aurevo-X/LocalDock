@@ -1,15 +1,15 @@
-Legal notices — LocalDock
-Product: LocalDock
+Legal notice — PC Command / Mr-Aurevo-X Suite
+Product: PC Command
 Publisher: Mr-Aurevo-X
 Copyright © 2026 Mr-Aurevo-X. All rights reserved.
 
-“LocalDock” means this application. “Mr-Aurevo-X” means the publisher.
+“PC Command” means the launcher and hubs. “Mr-Aurevo-X Suite” means the set of tools. “Mr-Aurevo-X” means the publisher.
 
-Windows may show “© 2026 Mr-Aurevo-X”. Details (terms, privacy, licenses) live in About.
+Each tool may display: “© 2026 Mr-Aurevo-X”. Full legal text lives in About.
 
-Contact / repo: https://github.com/Mr-Aurevo-X/LocalDock
+Contact / repositories: GitHub organization Mr-Aurevo-X
 Release hosting: GitHub (Microsoft)
 
-Software is free for non-commercial use (`LICENSE`), with no automatic updater and no commitment to future versions.
+Software is free for non-commercial use (LICENSE), with no automatic updates and no commitment to future versions.
 
-Optional support (a click leaves the app): Discord, PayPal, Revolut.
+Optional support: Discord (browser) · crypto tips (local copy) — see README.

@@ -657,7 +657,15 @@ function wireUi() {
   document.querySelectorAll("[data-support]").forEach((btn) => {
     btn.addEventListener("click", (event) => {
       event.preventDefault();
-      const kind = btn.getAttribute("data-support");
+      const kind = (btn.getAttribute("data-support") || "").toLowerCase();
+      if (kind === "crypto") {
+        try {
+          if (globalThis.MrAurevoXCrypto && typeof MrAurevoXCrypto.open === "function") {
+            MrAurevoXCrypto.open().catch(() => {});
+          }
+        } catch (_) {}
+        return;
+      }
       if (kind) {
         openSupport(kind).catch(() => {});
       }

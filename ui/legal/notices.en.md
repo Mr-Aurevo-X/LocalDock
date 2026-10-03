@@ -1,14 +1,16 @@
-Licenses / notices — LocalDock
+Licenses / notices — PC Command / Mr-Aurevo-X Suite (PC Command)
 
 Mr-Aurevo-X source: PolyForm Noncommercial License 1.0.0 (`LICENSE`). Marks: `TRADEMARK.md`.
 
-Possible third-party components:
-- Rust / crates.io (each crate’s license)
-- Tauri 2
-- Microsoft Edge WebView2 Runtime (Windows) / WebKitGTK (Linux)
-- curl (optional GitHub Latest check)
-- UI fonts (their respective licenses)
+Possible third-party components (depending on the tool):
+- Python (PSF License)
+- pywebview
+- Microsoft Edge WebView2 Runtime
+- PyInstaller
+- psutil
+- deep_translator / Google Translate (Trad-X only)
+- Outfit / JetBrains Mono fonts
 
 Upstream licenses apply to those components.
 
-The app ships with no automatic updater and no commitment to future versions.
+No automatic updates and no commitment to future versions.

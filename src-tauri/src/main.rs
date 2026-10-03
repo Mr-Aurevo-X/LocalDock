@@ -469,9 +469,7 @@ fn open_support(kind: String) -> CommandResult<()> {
 fn support_url(kind: &str) -> CommandResult<&'static str> {
     match kind.trim().to_ascii_lowercase().as_str() {
         "discord" => Ok("https://discord.com/users/406891052516114442"),
-        "paypal" => Ok("https://www.paypal.com/paypalme/aurevo1"),
-        "revolut" => Ok("https://revolut.me/mr_aurevo_x"),
-        "github" => Ok("https://github.com/Mr-Aurevo-X"),
+                        "github" => Ok("https://github.com/Mr-Aurevo-X"),
         _ => Err("unsupported support link".to_string()),
     }
 }
